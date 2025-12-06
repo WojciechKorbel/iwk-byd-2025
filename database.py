@@ -27,7 +27,8 @@ CREATE TABLE Statue (
     description TEXT,
     image_path TEXT,
     location_lat REAL,   -- Szerokość geograficzna (do obliczania odległości)
-    location_lon REAL   -- Długość geograficzna
+    location_lon REAL,   -- Długość geograficzna
+    location_name TEXT
 );
 
 
@@ -140,8 +141,8 @@ def load_statues_csv_to_base(filename):
     with open(filename) as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
-            execc = "INSERT INTO STATUE(name, description, img_path) VALUES ()"
-            cur.execute(execc)
+            execc = "INSERT INTO STATUE(name, location ,image_path) VALUES (?,?,?)"
+            cur.execute(execc, (row[1], row[2] ,row[4]))
 
 
     conn.commit()
@@ -158,9 +159,24 @@ def load_quiz_csv_to_base(filename):
     with open(filename) as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
-            execc = "INSERT INTO QUIZ(name, quiz_question, option_a, option_b, option_c) VALUES ()"
-            cur.execute(execc)
+            execc = "INSERT INTO QUIZ(name, quiz_question, option_a, option_b, option_c, correct_answer) VALUES (?,?,?,?,?,?)"
+            cur.execute(execc, (row[0], row[1], row[2], row[3], row[4], row[5]))
 
+
+    conn.commit()
+    conn.close()
+
+
+def load_desctiptions(filename):
+    conn = sqlite3.connect('database.db')
+
+    cur = conn.cursor()
+
+    with open(filename) as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            execc = "UPDATE Statue SET description = ? WHERE name = ?"
+            cur.execute(execc, (row[1], row[0]))
 
     conn.commit()
     conn.close()
