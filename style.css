@@ -1,0 +1,689 @@
+/* STYLE STRONY */
+
+body { 
+    margin: 0; 
+    padding: 0; 
+    font-family: 'Quicksand', sans-serif; 
+    overflow: hidden; 
+}
+        
+#map { 
+    width: 100%; 
+    height: 100vh; 
+    z-index: 1; 
+}
+
+/* Płynne przesuwanie */
+.leaflet-marker-icon, .leaflet-marker-shadow {
+    transition: all 0.3s ease-out;
+}
+
+/* UI */
+.status-bar { 
+    position: absolute; 
+    top: 20px; left: 
+    20px; right: 20px; 
+    background: rgba(0, 51, 102, 0.9); 
+    color: white; 
+    padding: 10px 20px; 
+    border-radius: 50px; 
+    display: flex; 
+    justify-content: space-between; 
+    font-weight: bold; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+    z-index: 1000; 
+}
+
+/* STYL POLA WPISYWANIA (INPUT) */
+#username-input {
+    width: 50%;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 15px;
+    color: white;
+    font-size: 20px;
+    font-family: 'Quicksand', sans-serif;
+    text-align: center;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+/* Po kliknięciu w pole (Focus) */
+#username-input:focus {
+    border-color: #28a745;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+}
+
+/* Styl dla tekstu (placeholder) */
+#username-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+}
+
+/* ---------------------------------------------------------------------------------------------------------- */
+/* EKRAN POWITALNY */
+#welcome-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    overflow: hidden;
+    background: 
+        linear-gradient(to bottom, rgba(0, 15, 40, 0.85), rgba(0, 10, 30, 0.75)),
+        url('./bydgoszcz.webp') no-repeat center center/cover;
+    background-attachment: fixed; 
+}
+
+/* SUBTELNA ANIMACJA TŁA */
+#welcome-screen::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(40, 167, 69, 0.08) 0%, rgba(0, 30, 100, 0) 60%);
+    animation: ambientGlow 20s infinite linear;
+    pointer-events: none;
+}
+
+@keyframes ambientGlow {
+    0% { transform: rotate(0deg) translate(0,0); }
+    50% { transform: rotate(180deg) translate(-30px, -30px); }
+    100% { transform: rotate(360deg) translate(0,0); }
+}
+
+
+/* KONTENER TREŚCI */
+.welcome-content {
+    padding: 40px;
+    width: 90%;
+    max-width: 1200px;
+    
+    /* Efekt matowego szkła */
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    box-shadow: 0 20px 50px rgba(0,0,0, 0.5);
+    animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* TYPOGRAFIA I PRZYCISKI */
+h1 {
+    font-size: 64px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    color: #ffffff;
+    text-shadow: 0 5px 15px rgba(0,0,0,0.5), 0 0 30px rgba(255, 50, 50, 0.3);
+}
+
+.welcome-content p {
+    font-size: 20px;
+    opacity: 0.9;
+    margin-bottom: 40px;
+    font-weight: 300;
+}
+
+.selection-group h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #aaa;
+}
+
+.options-row {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+}
+
+/* Przyciski wyboru */
+.opt-btn {
+    flex: 1;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 15px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    backdrop-filter: blur(5px);
+    max-width: 150px;
+}
+
+.opt-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+/* Aktywny przycisk */
+.opt-btn.selected {
+    background: #28a745;
+    border-color: #28a745;
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.6);
+    transform: scale(1.05) translateY(-3px);
+    color: white;
+}
+
+/* Główny przycisk Start */
+#start-btn {
+    margin-top: 40px;
+    width: 80%;
+    padding: 20px;
+    background: linear-gradient(45deg, #ff0000, #ff5e00);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 22px;
+    font-weight: 900;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.4);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+#start-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(255, 0, 0, 0.6);
+}
+
+#start-btn:active {
+    transform: scale(0.98);
+}
+
+/* ---------------------------------------------------------------------------------------------------------- */
+/* GRA */
+/* UI GRY  */
+
+/* Pasek na górze */
+.status-bar { 
+    position: absolute; 
+    top: 20px; left: 20px; right: 20px; 
+    background: rgba(0, 15, 30, 0.75); 
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #FFC107;
+    padding: 15px 25px; 
+    border-radius: 50px; 
+    display: flex; 
+    justify-content: space-between; 
+    font-weight: 700; 
+    letter-spacing: 1px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
+    z-index: 1000; 
+}
+
+/* Karta na dole */
+.quest-card { 
+    position: absolute; 
+    bottom: 30px;
+    left: 20px; 
+    right: 20px; 
+    
+    /* Efekt matowego szkła */
+    background: rgba(0, 20, 40, 0.85); 
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 15px 40px rgba(0,0,0, 0.5);
+    
+    border-radius: 30px; 
+    padding: 30px; 
+    z-index: 1000; 
+    color: white;
+    
+    /* Delikatne wejście */
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.quest-title { 
+    color: #ffffff; 
+    margin: 0 0 15px 0; 
+    font-size: 20px; 
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 10px;
+}
+
+.quest-riddle {
+    font-style: italic;
+    color: #ddd;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.controls-hint { 
+    font-size: 13px; 
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 20px; 
+    text-align: center; 
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.distance-meter { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    margin-bottom: 25px; 
+    font-weight: bold; 
+    font-size: 18px;
+    
+    /* Tło dla licznika */
+    background: #fff;
+    padding: 10px 15px;
+    border-radius: 12px;
+}
+
+/* Kolor tekstu dystansu */
+#dist-text {
+    color: #ff9800; 
+    text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+}
+
+/* PRZYCISK */
+.btn-checkin { 
+    width: 100%; 
+    padding: 18px; 
+    
+    /* Nieaktywny = Szklany */
+    background: rgba(255, 255, 255, 0.1); 
+    color: #003366;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    
+    border-radius: 15px; 
+    font-size: 16px; 
+    font-weight: 700; 
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: not-allowed; 
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Aktywny = Neonowy Gradient */
+.btn-checkin.active { 
+    background: linear-gradient(45deg, #ff0000, #ff5e00); 
+    color: white; 
+    border: none;
+    cursor: pointer; 
+    box-shadow: 0 5px 20px rgba(255, 69, 0, 0.4);
+    transform: translateY(0);
+}
+
+.btn-checkin.active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(255, 69, 0, 0.6);
+}
+
+/* Stan "Zrobione" (Zielony) */
+.btn-checkin.done {
+    background: #28a745 !important;
+    box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+    color: white;
+    cursor: default;
+}
+
+/* ---------------------------------------------------------------------------------------------------------- */
+/* PROFESJONALNY AVATAR */
+
+/* Kontener na obrazek (kółko) */
+.pro-avatar-container {
+    width: 60px;
+    height: 60px;
+    background: white;
+    border-radius: 50%;
+    border: 4px solid #ffffff; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Sam obrazek w środku */
+.pro-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Trójkątna strzałka pod kółkiem (Wskazuje punkt GPS) */
+.direction-arrow {
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; 
+    height: 0; 
+    
+    /* Rysowanie trójkąta w CSS */
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 12px solid #ffffff;
+    
+    z-index: 1;
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+}
+
+.custom-div-icon.walking .pro-avatar-container {
+    animation: walkBounce 0.5s infinite alternate;
+}
+
+@keyframes walkBounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-3px); }
+}
+
+/* ---------------------------------------------------------------------------------------------------------- */
+/* WYGLĄD OKIENKA SUKCESU (SweetAlert2) */
+
+/* Czerwona ramka z poświatą (Neon) */
+.epic-popup {
+    border: 4px solid #ff0000 !important;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.6) !important;
+    border-radius: 20px !important;
+    animation: popupPulse 1.5s infinite alternate;
+}
+
+/* Animacja pulsowania ramki */
+@keyframes popupPulse {
+    0% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
+    100% { box-shadow: 0 0 30px rgba(255, 0, 0, 0.9), 0 0 10px rgba(255, 0, 0, 0.5) inset; }
+}
+
+/* POPRAWKA WALIDACJI */
+.swal2-container {
+    z-index: 10000 !important;
+}
+
+/* Powiększenie tytułu */
+.swal2-title {
+    color: #cc0000 !important;
+    font-size: 28px !important;
+    text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------------------------------------------------- */
+/* NEONOWA SCIEZKA */
+.glowing-path {
+    filter: blur(0.5px) drop-shadow(0 0 8px rgba(255, 0, 0, 0.8));
+    transition: all 0.2s ease-out; 
+}
+
+/* ---------------------------------------------------------------------------------------------------------- */
+/* EKRAN Z WYNIKAMI */
+
+#results-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        linear-gradient(to bottom, rgba(0, 15, 40, 0.85), rgba(0, 10, 30, 0.75)),
+        url('./bydgoszcz.webp') no-repeat center center/cover;
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    backdrop-filter: blur(10px);
+    
+    /* Animacja wejścia */
+    opacity: 0;
+    animation: fadeInResult 0.5s forwards;
+}
+
+@keyframes fadeInResult {
+    to { opacity: 1; }
+}
+
+.results-content {
+    /* Ciemne Szkło */
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    
+    /* Złota ramka i poświata */
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 50px rgba(255, 215, 0, 0.15), inset 0 0 20px rgba(255, 215, 0, 0.05);
+    
+    padding: 50px 30px;
+    border-radius: 40px;
+    width: 90%;
+    max-width: 800px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Tytuł ze złotym gradientem */
+.results-content h1 {
+    font-size: 42px;
+    margin: 10px 0 20px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    
+    /* Gradientowy tekst */
+    background: linear-gradient(to right, #FFD700, #FFA500, #FFD700);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.results-content p {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 300;
+}
+
+/* Animacja trofeum */
+.trophy-anim {
+    font-size: 80px;
+    margin-bottom: 10px;
+    animation: trophyBounce 2s infinite ease-in-out;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+}
+
+@keyframes trophyBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-15px) scale(1.1); }
+}
+
+/* Kontener na statystyki */
+.stats-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 40px 0;
+}
+
+/* Szklane kafelki statystyk */
+.stat-box {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 20px 15px;
+    border-radius: 20px;
+    min-width: 200px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s;
+}
+
+.stat-box:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 32px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.reward-text {
+    font-size: 15px;
+    color: #FFC107;
+    margin-bottom: 30px;
+    font-style: italic;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 10px;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+/* Przycisk Restart */
+#restart-btn {
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(45deg, #FFC107, #FF8C00);
+    color: #003366;
+    border: none;
+    border-radius: 50px;
+    font-size: 18px;
+    font-weight: 900;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 5px 20px rgba(255, 140, 0, 0.4);
+    transition: all 0.3s;
+}
+
+#restart-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(255, 140, 0, 0.6);
+}
+
+/* ---------------------------------------------------------------------------------------------------------- */
+/* EKRAN POMNIKA */
+#monument-screen {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 5000;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; 
+}
+
+/* Zdjęcie w tle */
+#monument-bg {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+    animation: slowZoom 20s infinite alternate linear;
+}
+
+@keyframes slowZoom {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.15); }
+}
+
+/* Przyciemnienie na dole */
+.monument-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 80%);
+    z-index: 2;
+}
+
+/* Kontener treści */
+.monument-content-wrapper {
+    position: relative;
+    z-index: 3;
+    padding: 30px;
+    color: white;
+    text-align: center;
+    animation: slideUp 0.5s ease-out;
+}
+
+#mon-title {
+    font-size: 52px;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    color: #FFC107;
+}
+
+/* Karta z opisem */
+.info-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 16px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* Przycisk Quizu */
+#quiz-btn {
+    width: 100%;
+    padding: 20px;
+    background: #28a745;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    border: none;
+    border-radius: 50px;
+    box-shadow: 0 5px 20px rgba(40, 167, 69, 0.5);
+    cursor: pointer;
+    animation: pulse 2s infinite;
+}
+
+/* Przycisk zamknij */
+.close-btn {
+    position: absolute;
+    top: -50vh;
+    right: 0;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 30px;
+    cursor: pointer;
+}

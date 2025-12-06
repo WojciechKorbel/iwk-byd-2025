@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>BYDGOSKIE PODCHODY</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+
+    <!-- ZALADOWANIE CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- EKRAN POWITALNY -->
+     <div id="welcome-screen">
+        <div class="welcome-content">
+            <h1>BYDGOSKIE PODCHODY</h1>
+            <p>Odkryj tajemnice miasta!</p>
+
+            <div class="selection-group">
+                <input type="text" id="username-input" placeholder="Wpisz swój nick..." maxlength="15">
+            </div>
+
+            <div class="selection-group">
+                <h3>Wybierz poziom:</h3>
+                <div class="options-row">
+                    <button class="opt-btn" onclick="selectLevel('easy', this)">Łatwy ☕</button>
+                    <button class="opt-btn" onclick="selectLevel('hard', this)">Trudny 🕵️</button>
+                </div>
+            </div>
+
+            <div class="selection-group">
+                <h3>Twój wiek:</h3>
+                <div class="options-row">
+                    <button class="opt-btn" onclick="selectAge('18-25', this)">18-25</button>
+                    <button class="opt-btn" onclick="selectAge('26-50', this)">26-50</button>
+                    <button class="opt-btn" onclick="selectAge('50+', this)">50+</button>
+                </div>
+            </div>
+
+            <button id="start-btn" onclick="startGame()">ROZPOCZNIJ PRZYGODĘ ▶</button>
+        </div>
+    </div>
+
+    <!-- PRZENIESIENIE SIE DO MIEJSCA - POMNIK -->
+    <div id="monument-screen" style="display: none;">
+        <div id="monument-bg"></div>
+        <div class="monument-overlay"></div>
+
+        <div class="monument-content-wrapper">
+            <h1 id="mon-title">Nazwa Miejsca</h1>
+            <div class="info-card">
+                <p id="mon-info">Opis historyczny...</p>
+            </div>
+            <button id="quiz-btn" onclick="startQuiz()">ROZWIĄŻ ZAGADKĘ</button>
+            
+            <button class="close-btn" onclick="closeMonumentScreen()">✕</button>
+        </div>
+    </div>
+
+    <!-- EKRAN Z WYNIKAMI -->
+     <div id="results-screen" style="display: none;">
+        <div class="results-content">
+            <div class="trophy-anim">🏆</div>
+            <h1>GRATULACJE!</h1>
+            <p>Jesteś Mistrzem Bydgoszczy, <span id="display-username" style="color: #FFC107; font-weight: bold;">GRACZU</span>!</p>
+
+            <div class="stats-container">
+                <div class="stat-box">
+                    <span class="stat-label">Wynik</span>
+                    <span class="stat-value" id="final-score">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Czas</span>
+                    <span class="stat-value" id="final-time">00:00</span>
+                </div>
+            </div>
+
+            <p class="reward-text">Pokaż ten ekran w punkcie IT,<br>aby odebrać nagrodę!</p>
+
+            <button id="restart-btn" onclick="location.reload()">ZAGRAJ JESZCZE RAZ ↺</button>
+        </div>
+    </div>
+
+    <!-- GRA -->
+    <div class="status-bar">
+        <span id="score-board">🏆 Pkt: 0</span>
+        <span id="goal-board">Cel: 0/5</span>
+    </div>
+
+    <div class="quest-card">
+        <h2 class="quest-title">Aktualny cel: Łuczniczka</h2>
+        <div class="controls-hint">
+            Sterowanie (symulacja): Kliknij na mapę lub użyj Strzałek
+        </div>
+
+        <div class="distance-meter">
+            <span style="font-size: 20px;">📍</span>
+            <span id="dist-text">Czekam na ruch...</span>
+        </div>
+
+        <button class="btn-checkin" id="btn-action" onclick="checkIn()">Jeszcze za daleko...</button>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- ZALADOWANIE JAVASCRIPT -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
