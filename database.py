@@ -109,7 +109,9 @@ CREATE TABLE User_Badges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
     badge_name TEXT, -- Np. "Odkrywca", "Fotograf"
+    description TEXT,
     earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    image TEXT,
     FOREIGN KEY (user_id) REFERENCES User(id)
 );'''
     try:
@@ -180,6 +182,40 @@ def load_desctiptions(filename):
 
     conn.commit()
     conn.close()
+
+def load_badges(filename):
+    conn = sqlite3.connect('database.db')
+
+    cur = conn.cursor()
+
+    with open(filename) as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            execc = "INSERT INTO Badge(name, description) VALUES (?,?)"
+            cur.execute(execc, (row[1], row[2]))
+
+
+    conn.commit()
+    conn.close()
+
+
+
+def load_gastronomy(filename):
+    conn = sqlite3.connect('database.db')
+    cur = conn.cursor()
+
+    with open(filename) as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            execc = ("INSERT INTO Gastronomy_point(name, description, type, location_lat, location_lon, discount_description)"
+                     " VALUES (?,?,?,?,?,?)")
+            cur.execute(execc, (row[0], row[1] , row[2], row[3], row[4], row[5]))
+
+    conn.commit()
+    conn.close()
+
+
+
 
 
 
