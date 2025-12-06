@@ -27,7 +27,7 @@ CREATE TABLE Statue (
     description TEXT,
     image_path TEXT,
     location_lat REAL,   -- Szerokość geograficzna (do obliczania odległości)
-    location_lon REAL,   -- Długość geograficzna
+    location_lon REAL   -- Długość geograficzna
 );
 
 
@@ -38,8 +38,7 @@ CREATE TABLE Quiz (
     option_a TEXT,       -- Odpowiedź A
     option_b TEXT,       -- Odpowiedź B
     option_c TEXT,       -- Odpowiedź C
-    correct_answer TEXT, -- Np. 'A'
-
+    correct_answer TEXT -- Np. 'A'
 );
 
 -- 3. GASTRONOMIA (Nagroda po 2 punktach)
@@ -141,8 +140,38 @@ def load_statues_csv_to_base(filename):
     with open(filename) as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
-            exec = "INSERT INTO STATUE(name, description, img_path) VALUES ()"
-            cur.execute(exec)
+            execc = "INSERT INTO STATUE(name, description, img_path) VALUES ()"
+            cur.execute(execc)
+
+
+    conn.commit()
+    conn.close()
+
+
+
+def load_quiz_csv_to_base(filename):
+    conn = sqlite3.connect('database.db')
+
+    cur = conn.cursor()
+
+
+    with open(filename) as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            execc = "INSERT INTO QUIZ(name, quiz_question, option_a, option_b, option_c) VALUES ()"
+            cur.execute(execc)
+
+
+    conn.commit()
+    conn.close()
+
+
+
+
+
+
+if __name__ == '__main__':
+    pass
 
 
 
