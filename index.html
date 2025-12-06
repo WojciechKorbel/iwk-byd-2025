@@ -22,6 +22,10 @@
             <p>Odkryj tajemnice miasta!</p>
 
             <div class="selection-group">
+                <input type="text" id="username-input" placeholder="Wpisz swój nick..." maxlength="15">
+            </div>
+
+            <div class="selection-group">
                 <h3>Wybierz poziom:</h3>
                 <div class="options-row">
                     <button class="opt-btn" onclick="selectLevel('easy', this)">Łatwy ☕</button>
@@ -63,7 +67,7 @@
         <div class="results-content">
             <div class="trophy-anim">🏆</div>
             <h1>GRATULACJE!</h1>
-            <p>Jesteś Mistrzem Bydgoszczy!</p>
+            <p>Jesteś Mistrzem Bydgoszczy, <span id="display-username" style="color: #FFC107; font-weight: bold;">GRACZU</span>!</p>
 
             <div class="stats-container">
                 <div class="stat-box">
@@ -108,7 +112,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <!-- ZALADOWANIE JAVASCRIPT -->
-     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

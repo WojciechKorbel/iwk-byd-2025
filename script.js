@@ -3,6 +3,25 @@
 let userLevel = null;
 let userAge = null;
 
+// Ta funkcja uruchamia się DOPIERO jak CSV zostaną pobrane
+function initGameAfterLoad() {
+    if (targets.length === 0) return;
+
+    const firstTarget = targets[0];
+
+    // Aktualizujemy UI
+    document.querySelector('.quest-title').innerText = `Cel: ${firstTarget.name}`;
+    if(document.querySelector('.quest-riddle')) {
+        document.querySelector('.quest-riddle').innerText = `"${firstTarget.hint}"`;
+    }
+    
+    // Ustawiamy marker celu
+    targetMarker.setLatLng([firstTarget.lat, firstTarget.lng]);
+    
+    // Aktualizujemy licznik
+    document.getElementById('goal-board').innerText = `Cel: 0/${targets.length}`;
+}
+
 // Funkcja wyboru poziomu
 function selectLevel(level, btnElement) {
     userLevel = level;
@@ -48,97 +67,141 @@ function startGame() {
         document.getElementById('game-ui-top').style.display = "flex";
         document.getElementById('game-ui-bottom').style.display = "block";
         
-        // (Opcjonalnie) Dostosuj grę do wyboru
         if (userLevel === 'hard') {
             Swal.fire('Tryb Trudny!', 'W tym trybie wskazówki są mniej dokładne. Powodzenia!', 'info');
         }
     }, 500);
 }
 
-// ------------------------------------------------------------------------------------------------------------------------
-// --- KONFIGURACJA PUNKTÓW Z QUIZEM I ATRAKCJAMI ---
-const targets = [
-    {
-        name: "Łuczniczka",
-        lat: 53.125184, 
-        lng: 18.012354,
-        hint: "Stoję w parku naprzeciwko teatru...",
-        image: "./bydgoszcz.webp",
-        info: "Łuczniczka to jeden z najstarszych symboli Bydgoszczy. Rzeźba powstała w 1910 roku w Berlinie. Przez lata budziła kontrowersje ze względu na swoją nagość.",
-        quiz: {
-            question: "Co trzyma Łuczniczka w lewej ręce?",
-            answers: { 'a': 'Strzałę', 'b': 'Łuk', 'c': 'Jabłko' },
-            correct: 'b'
-        },
-        // NOWE: Polecane miejsca
-        recommendations: [
-            { icon: '☕', name: 'Restauracja Weranda', desc: 'Kawa z widokiem na park.' },
-            { icon: '🎭', name: 'Teatr Polski', desc: 'Tuż obok! Warto zobaczyć repertuar.' }
-        ]
-    },
-    {
-        name: "Spichrze nad Brdą",
-        lat: 53.123600, 
-        lng: 18.001500,
-        hint: "Trzy zabytkowe budynki, symbol miasta nad rzeką.",
-        image: "./bydgoszcz.webp",
-        info: "Łuczniczka to jeden z najstarszych symboli Bydgoszczy. Rzeźba powstała w 1910 roku w Berlinie. Przez lata budziła kontrowersje ze względu na swoją nagość.",
-        quiz: {
-            question: "Ile jest obecnie zabytkowych spichrzy?",
-            answers: { 'a': 'Pięć', 'b': 'Dwa', 'c': 'Trzy' },
-            correct: 'c'
-        },
-        recommendations: [
-            { icon: '🚢', name: 'Barka Lemara', desc: 'Żywe muzeum szypra na wodzie.' },
-            { icon: '🍔', name: 'Stary Port', desc: 'Kultowe miejsce na szybki lunch.' }
-        ]
-    },
-    {
-        name: "Wyspa Młyńska",
-        lat: 53.122500, 
-        lng: 17.998500,
-        hint: "Zielone serce miasta, otoczone wodą.",
-        image: "./bydgoszcz.webp",
-        info: "Łuczniczka to jeden z najstarszych symboli Bydgoszczy. Rzeźba powstała w 1910 roku w Berlinie. Przez lata budziła kontrowersje ze względu na swoją nagość.",
-        quiz: {
-            question: "Jaka rzeka opływa Wyspę Młyńską?",
-            answers: { 'a': 'Wisła', 'b': 'Brda', 'c': 'Odra' },
-            correct: 'b'
-        },
-        recommendations: [
-            { icon: '🍦', name: 'Młyny Rothera', desc: 'Lody na tarasie widokowym.' },
-            { icon: '🧸', name: 'Magiczny Plac Zabaw', desc: 'Idealne miejsce dla dzieci.' }
-        ]
-    }
-];
+// -------------------------------------------------------------------------------------
+// KONFIGURACJA DANYCH (ŁADOWANIE Z CSV)
 
-// losowanie kolejnosci pomnikow
-targets.sort(() => Math.random() - 0.5);
+// Zmienna na cele
+let targets = [];
+
+// Funkcja pomocnicza do konwersji współrzędnych
+function parseCoord(coord) {
+    if (typeof coord === 'string') {
+        return parseFloat(coord.replace(',', '.'));
+    }
+    return coord;
+}
+
+// 3. Główna funkcja ładująca i łącząca 3 pliki CSV
+async function loadGameData() {
+    try {
+        console.log("Ładowanie danych...");
+
+        const [pomnikiRes, opisyRes, pytaniaRes] = await Promise.all([
+            fetch('./pomniki.csv'),
+            fetch('./opisy.csv'),
+            fetch('./pytania.csv')
+        ]);
+
+        const pomnikiText = await pomnikiRes.text();
+        const opisyText = await opisyRes.text();
+        const pytaniaText = await pytaniaRes.text();
+
+        // Parsowanie CSV
+        const pomnikiData = Papa.parse(pomnikiText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
+        const opisyData = Papa.parse(opisyText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
+        const pytaniaData = Papa.parse(pytaniaText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
+
+        // ŁĄCZENIE DANYCH (Teraz łączymy po 'name', bo tak masz w plikach!)
+        targets = pomnikiData.map(pomnik => {
+            // Szukamy po nazwie, bo w plikach nie ma wspólnego ID
+            const opisRow = opisyData.find(o => o.name === pomnik.name);
+            const pytanieRow = pytaniaData.find(p => p.name === pomnik.name);
+
+            // Zabezpieczenie na brak współrzędnych (żeby gra nie wybuchła, jeśli zapomnisz dodać lat/lon)
+            // Domyślnie ustawi środek Bydgoszczy, jeśli w pliku będzie pusto.
+            let latitude = parseCoord(pomnik.lat);
+            let longitude = parseCoord(pomnik.lon);
+            
+            if (latitude === 0 || longitude === 0) {
+                console.warn(`Brak współrzędnych dla: ${pomnik.name}. Używam domyślnych.`);
+                // Możesz tu wpisać współrzędne "startowe" jako awaryjne
+                latitude = 53.123; 
+                longitude = 18.000;
+            }
+
+            return {
+                id: pomnik.id,
+                name: pomnik.name,
+                lat: latitude,
+                lng: longitude,
+                
+                // Opisy: w pliku masz kolumnę 'description'
+                hint: opisRow ? opisRow.description : "Znajdź ten punkt na mapie!",
+                info: opisRow ? opisRow.description : "Brak dodatkowego opisu.", // Używamy tego samego opisu, bo w pliku jest tylko jeden
+                
+                // Zdjęcie z Twojego pliku CSV
+                image: pomnik.image || "https://via.placeholder.com/800x1200?text=Brak+Zdjecia",
+                
+                // Quiz: dopasowany do nazw kolumn w Twoim pliku (ansA, ansB, correct)
+                quiz: {
+                    question: pytanieRow ? pytanieRow.question : "Brak pytania dla tego miejsca.",
+                    answers: {
+                        'a': pytanieRow ? pytanieRow.ansA : "",
+                        'b': pytanieRow ? pytanieRow.ansB : "",
+                        'c': pytanieRow ? pytanieRow.ansC : ""
+                    },
+                    // W pliku masz 'A', 'B' - zamieniamy na małe litery 'a', 'b'
+                    correct: pytanieRow ? pytanieRow.correct.toLowerCase().trim() : 'a'
+                },
+                
+                // Rekomendacje (nie ma ich w CSV, więc dodaję domyślne)
+                recommendations: [
+                    { icon: '⭐', name: 'Atrakcja w pobliżu', desc: 'Warto zobaczyć!' }
+                ]
+            };
+        });
+
+        // Mieszamy kolejność
+        targets.sort(() => Math.random() - 0.5);
+
+        console.log("Dane załadowane poprawnie!", targets);
+        
+        // Inicjalizacja gry nowymi danymi
+        initGameAfterLoad();
+
+    } catch (error) {
+        console.error("Błąd krytyczny:", error);
+        alert("Błąd danych! Sprawdź czy dodałeś kolumny lat/lon do pomniki.csv");
+    }
+}
+
+// Uruchamiamy ładowanie
+loadGameData();
+
+// -------------------------------------------------------------------------------------
+// DALSZA CZĘŚĆ GRY (ZMIENNE I LOGIKA)
 
 // Zmienne gry
-let gameStartTime = null; // godzina startu
+let gameStartTime = null; 
 let currentTargetIndex = 0; 
 let currentScore = 0;
 let completedQuests = 0;
 let prevLng = 18.005;
+let userName = "";
 
 // Start (Opera Nova)
 let currentLat = 53.123000;
 let currentLng = 18.005000;
 
 // --- MAPA ---
-const map = L.map('map').setView([currentLat, currentLng], 16);
+const map = L.map('map', { keyboard: false }).setView([currentLat, currentLng], 16);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// --- CEL (NIEWIDOCZNY NA MAPIE) ---
-let targetMarker = L.marker([targets[0].lat, targets[0].lng]); 
+// --- CEL I GRACZ ---
+// Tworzymy markery, ale jeszcze ich nie ustawiamy (czekamy na dane)
+let targetMarker = L.marker([0, 0]); 
 
-// --- GRACZ (PROFESJONALNY AVATAR) ---
 const characterIcon = L.divIcon({
-    className: 'custom-div-icon', // Klasa do animacji w CSS
+    className: 'custom-div-icon', 
     html: `
         <div id="player-wrapper" style="position: relative; width: 60px;">
             <div class="pro-avatar-container">
@@ -147,14 +210,14 @@ const characterIcon = L.divIcon({
             <div class="direction-arrow"></div>
         </div>
     `,
-    iconSize: [60, 70], // Rozmiar całego kontenera (z strzałką)
-    iconAnchor: [30, 70], // Punkt zakotwiczenia: Środek (30), Dół (70) - tam jest czubek strzałki
-    popupAnchor: [0, -70] // Dymek nad głową
+    iconSize: [60, 70], 
+    iconAnchor: [30, 70], 
+    popupAnchor: [0, -70]
 });
 
 let userMarker = L.marker([currentLat, currentLng], { icon: characterIcon }).addTo(map);
 
-// --- ŚCIEŻKA (CZERWONA KRESKA) ---
+// ŚCIEŻKA (CZERWONA KRESKA)
 let pathHistory = [];
 
 // Tworzymy linię na mapie
@@ -167,7 +230,7 @@ const pathLine = L.polyline([], {
     className: 'glowing-path' 
 }).addTo(map);
 
-// --- FUNKCJA WYGŁADZAJĄCA (ALGORYTM CHAIKINA) ---
+// FUNKCJA WYGŁADZAJĄCA
 function getSmoothPath(points) {
     if (points.length < 3) return points;
 
@@ -190,15 +253,21 @@ function getSmoothPath(points) {
 // ---------------------------------------------------------------------------------------------------------------------
 // Funkcja START GRY
 function startGame() {
-    if (!userLevel || !userAge) {
+    // Pobierz wpisane imię
+    const nameInput = document.getElementById('username-input').value.trim();
+
+    // Walidacja
+    if (!userLevel || !userAge || nameInput === "") {
         Swal.fire({
             icon: 'warning',
-            title: 'Wybierz opcje!',
-            text: 'Musisz zaznaczyć poziom trudności i wiek.',
+            title: 'Uzupełnij dane!',
+            text: 'Musisz wpisać nick oraz wybrać poziom i wiek.',
             confirmButtonColor: '#003366'
         });
         return;
     }
+
+    userName = nameInput;
 
     gameStartTime = new Date();
 
@@ -215,27 +284,24 @@ function startGame() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// --- FUNKCJA AKTUALIZUJĄCA POZYCJĘ ---
+// FUNKCJA AKTUALIZUJĄCA POZYCJE
 function updatePosition(lat, lng) {
     // Aktualizacja zmiennych
     currentLat = lat;
     currentLng = lng;
 
-    // --- RYSOWANIE ŚCIEŻKI ---
+    // RYSOWANIE ŚCIEŻKI
     pathHistory.push([currentLat, currentLng]);
     if (pathHistory.length > 500) pathHistory.shift();
     const roundedPath = getSmoothPath(pathHistory);
     pathLine.setLatLngs(roundedPath);
 
-    // --- PRZESUWANIE GRACZA ---
+    // PRZESUWANIE GRACZA
     userMarker.setLatLng([currentLat, currentLng]);
-    
-    // Dodajemy klasę "walking" do ikony, żeby podskakiwała przy ruchu
-    // (Usuwamy ją po chwili, żeby przestał skakać jak stanie)
+   
     const iconDiv = userMarker.getElement();
     if (iconDiv) {
         iconDiv.classList.add('walking');
-        // Reset animacji po 300ms (zatrzymaj podskakiwanie)
         clearTimeout(userMarker.walkTimeout);
         userMarker.walkTimeout = setTimeout(() => {
             iconDiv.classList.remove('walking');
@@ -245,7 +311,7 @@ function updatePosition(lat, lng) {
     // Kamera podąża za graczem
     map.panTo([currentLat, currentLng]); 
     
-    // --- OBLICZANIE DYSTANSU I UI ---
+    // OBLICZANIE DYSTANSU I UI
     const activeTarget = targets[currentTargetIndex];
     const dist = Math.floor(L.latLng(currentLat, currentLng).distanceTo(L.latLng(activeTarget.lat, activeTarget.lng)));
     
@@ -272,7 +338,7 @@ function updatePosition(lat, lng) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// --- STEROWANIE ---
+// STEROWANIE
 map.on('click', function(e) { updatePosition(e.latlng.lat, e.latlng.lng); });
 
 document.addEventListener('keydown', function(e) {
@@ -286,9 +352,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-// 1. WEJŚCIE NA EKRAN POMNIKA (To się dzieje po kliknięciu "Odbierz Odznakę")
+// WEJŚCIE NA EKRAN POMNIKA
 function checkIn() { 
     const btn = document.getElementById('btn-action');
     if (btn.classList.contains('done')) return;
@@ -300,9 +364,8 @@ function checkIn() {
     document.getElementById('mon-title').innerText = activeTarget.name;
     document.getElementById('mon-info').innerText = activeTarget.info || "Brak opisu.";
     
-    // --- USTAW ZDJĘCIE TŁA ---
+    // Ustaw tło ze zdjęciem
     const bgDiv = document.getElementById('monument-bg');
-    // Używamy obrazka z danych LUB placeholdera, jeśli brak pliku
     const imgUrl = activeTarget.image || 'https://via.placeholder.com/800x1200?text=Brak+Zdjecia';
     
     bgDiv.style.backgroundImage = `url('${imgUrl}')`;
@@ -317,11 +380,11 @@ function closeMonumentScreen() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// 2. START QUIZU (To się dzieje po kliknięciu "Rozwiąż Zagadkę" na ekranie ze zdjęciem)
+// START QUIZU
 function startQuiz() {
     const activeTarget = targets[currentTargetIndex];
 
-    // Konfiguracja SweetAlert (musi być nad zdjęciem!)
+    // Konfiguracja SweetAlert
     Swal.fire({
         title: 'ZAGADKA!',
         text: activeTarget.quiz.question,
@@ -331,14 +394,13 @@ function startQuiz() {
         confirmButtonText: 'Sprawdź',
         confirmButtonColor: '#003366',
         inputValidator: (value) => { if (!value) return 'Wybierz odpowiedź!' },
-        // Trik na z-index, żeby okno było nad zdjęciem
         didOpen: () => {
             document.querySelector('.swal2-container').style.zIndex = '10000';
         }
     }).then((result) => {
         if (result.isDismissed) return;
 
-        // --- Logika Punktów (taka jak była wcześniej) ---
+        // --- Logika Punktów ---
         const userAnswer = result.value;
         let pointsEarned = 100;
         let msgTitle = "DOBRE CHĘCI...";
@@ -445,16 +507,19 @@ updatePosition(currentLat, currentLng);
 function showResults() {
     // Oblicz czas gry
     const endTime = new Date();
-    const timeDiff = endTime - gameStartTime; // Różnica w milisekundach
+    const timeDiff = endTime - gameStartTime;
     
     // Zamiana na minuty i sekundy
     const minutes = Math.floor(timeDiff / 60000);
     const seconds = Math.floor((timeDiff % 60000) / 1000);
     const timeString = `${minutes}m ${seconds}s`;
 
-    // Wpisz dane do HTML
+    // Wpisz wynik i czas
     document.getElementById('final-score').innerText = currentScore;
     document.getElementById('final-time').innerText = timeString;
+
+    // Gracz
+    document.getElementById('display-username').innerText = userName;
 
     // Pokaż ekran
     const resultsScreen = document.getElementById('results-screen');
