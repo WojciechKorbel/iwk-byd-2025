@@ -6,8 +6,8 @@ import requests
 from bs4 import BeautifulSoup
 
 def trim_alnum(text):
-    text = re.sub(r'^[^a-zA-Z0-9"ĄĘĆŻŹÓŁ]+', '', text)
-    text = re.sub(r'[^a-zA-Z0-9"ĄĘĆŻŹÓŁ]+$', '', text)
+    text = re.sub(r'^[^a-zA-Z0-9"ĄĘĆŻŹÓŁ()ąęćżźół1234567890]+', '', text)
+    text = re.sub(r'[^a-zA-Z0-9"ĄĘĆŻŹÓŁ()ąęćżźół1234567890]+$', '', text)
     return text
 
 def trim_quotes(text):
