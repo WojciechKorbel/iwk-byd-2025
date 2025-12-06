@@ -93,9 +93,9 @@ async function loadGameData() {
         console.log("Ładowanie danych...");
 
         const [pomnikiRes, opisyRes, pytaniaRes] = await Promise.all([
-            fetch('./pomniki.csv'),
-            fetch('./opisy.csv'),
-            fetch('./pytania.csv')
+            fetch('datas/pomniki.csv'),
+            fetch('datas/opisy.csv'),
+            fetch('datas/pytania.csv')
         ]);
 
         const pomnikiText = await pomnikiRes.text();
