@@ -30,6 +30,28 @@ class StatueReader:
     def __init__(self, url):
         self.url = url
         self.statues = None
+        self.mac_cords = {}
+
+    def read_map_cords(self, filename):
+        """
+        Wczytuje kordynaty pomników do słownika
+        :param filename: plik ze współrzędnymi
+        :return: -
+        """
+        head = True
+        with open(filename, "r", encoding="utf-8") as f:
+            for line in f:
+                if head:
+                    head = False
+                    continue
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split(";")
+                name = parts[0].strip()
+                lat = float(parts[1].strip())
+                lon = float(parts[2].strip())
+                self.mac_cords[name] = (lat, lon)
 
     def get_statues_from_site(self):
         """
@@ -46,6 +68,8 @@ class StatueReader:
         soup = BeautifulSoup(response.text, 'html.parser')
 
         self.statues = []
+
+        self.read_map_cords("lat_lon.csv")
 
         items = soup.find_all('li', class_='col-md-4')
 
@@ -70,6 +94,10 @@ class StatueReader:
             name = trim(name)
             location = trim(location)
 
+            # lat, lon
+            lat = self.mac_cords[name][0]
+            lon = self.mac_cords[name][1]
+
             # dodanie do słownika
             self.statues.append({
                 "id": id,
@@ -77,6 +105,8 @@ class StatueReader:
                 "location": location,
                 "link": link,
                 "image": img_url,
+                "lat": lat,
+                "lon": lon
             })
 
 
@@ -111,7 +141,7 @@ class StatueReader:
         with open(filename, "r", encoding="utf-8") as csvfile:
             reader = csv.DictReader(csvfile, delimiter=';')
             for item in reader:
-                print(item["id"], ";", item["name"], ";", item["location"])
+                print(item["id"], ";", item["name"], ";", item["location"], ";", item["lat"], ";", item["lon"])
 
     def display_statues_names(self, filename):
         """
@@ -153,6 +183,6 @@ url = "https://visitbydgoszcz.pl/pl/miejsca/87-rzezby-i-pomniki"
 sr = StatueReader(url)
 # sr.get_statues_from_site()
 # sr.saveCSV("pomniki.csv")
-#sr.display_statues("pomniki.csv")
+sr.display_statues("pomniki.csv")
 
-sr.display_statues_names("pomniki.csv")
+# sr.display_statues_names("pomniki.csv")
