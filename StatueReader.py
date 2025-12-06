@@ -6,8 +6,8 @@ import requests
 from bs4 import BeautifulSoup
 
 def trim_alnum(text):
-    text = re.sub(r'^[^a-zA-Z0-9"ĄĘĆŻŹÓŁ]+', '', text)
-    text = re.sub(r'[^a-zA-Z0-9"ĄĘĆŻŹÓŁ]+$', '', text)
+    text = re.sub(r'^[^a-zA-Z0-9"ĄĘĆŻŹÓŁ()ąęćżźół1234567890]+', '', text)
+    text = re.sub(r'[^a-zA-Z0-9"ĄĘĆŻŹÓŁ()ąęćżźół1234567890]+$', '', text)
     return text
 
 def trim_quotes(text):
@@ -69,7 +69,7 @@ class StatueReader:
 
         self.statues = []
 
-        self.read_map_cords("lat_lon.csv")
+        self.read_map_cords("datas/lat_lon.csv")
 
         items = soup.find_all('li', class_='col-md-4')
 
@@ -183,6 +183,6 @@ url = "https://visitbydgoszcz.pl/pl/miejsca/87-rzezby-i-pomniki"
 sr = StatueReader(url)
 # sr.get_statues_from_site()
 # sr.saveCSV("pomniki.csv")
-sr.display_statues("pomniki.csv")
+sr.display_statues("datas/pomniki.csv")
 
 # sr.display_statues_names("pomniki.csv")
