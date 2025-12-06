@@ -1,0 +1,111 @@
+name;question;ansA;ansB;ansC;correct
+Rzeźba Łuczniczki;question number 1;poprawna;niepop1;niepop2;A
+Rzeźba Łuczniczki;question number 2;niepop2;poprawna;niepop1;B
+Mistrz Twardowski;question number 3;niepop2;poprawna;niepop1;B
+Mistrz Twardowski;question number 4;poprawna;niepop1;niepop2;A
+Wioślarz "Na mecie";question number 5;niepop2;niepop1;poprawna;C
+Wioślarz "Na mecie";question number 6;niepop2;niepop1;poprawna;C
+Oko;question number 7;poprawna;niepop2;niepop1;A
+Oko;question number 8;niepop2;niepop1;poprawna;C
+Wikliniarka;question number 9;niepop2;niepop1;poprawna;C
+Wikliniarka;question number 10;poprawna;niepop2;niepop1;A
+Zegar z czasem bydgoskim;question number 11;poprawna;niepop2;niepop1;A
+Zegar z czasem bydgoskim;question number 12;niepop2;niepop1;poprawna;C
+Przechodzący przez Rzek;question number 13;poprawna;niepop2;niepop1;A
+Przechodzący przez Rzek;question number 14;poprawna;niepop1;niepop2;A
+Fontanna Potop;question number 15;niepop1;poprawna;niepop2;B
+Fontanna Potop;question number 16;poprawna;niepop2;niepop1;A
+Pomnik Kopernika;question number 17;poprawna;niepop2;niepop1;A
+Pomnik Kopernika;question number 18;poprawna;niepop1;niepop2;A
+Ławeczka Mariana Rejewskiego;question number 19;niepop2;poprawna;niepop1;B
+Ławeczka Mariana Rejewskiego;question number 20;niepop1;poprawna;niepop2;B
+Pomnik św. Jana Nepomucena;question number 21;niepop1;poprawna;niepop2;B
+Pomnik św. Jana Nepomucena;question number 22;poprawna;niepop2;niepop1;A
+Rzeźba Flisaka;question number 23;niepop2;niepop1;poprawna;C
+Rzeźba Flisaka;question number 24;niepop2;niepop1;poprawna;C
+Pomnik Szwalbego;question number 25;poprawna;niepop1;niepop2;A
+Pomnik Szwalbego;question number 26;poprawna;niepop2;niepop1;A
+Pomnik Leona Barciszewskiego;question number 27;niepop1;niepop2;poprawna;C
+Pomnik Leona Barciszewskiego;question number 28;niepop1;niepop2;poprawna;C
+Pomnik Marii Konopnickiej;question number 29;niepop1;poprawna;niepop2;B
+Pomnik Marii Konopnickiej;question number 30;poprawna;niepop2;niepop1;A
+Tańczące Fontanny;question number 31;poprawna;niepop1;niepop2;A
+Tańczące Fontanny;question number 32;niepop2;poprawna;niepop1;B
+Cztery Pory Roku;question number 33;niepop1;niepop2;poprawna;C
+Cztery Pory Roku;question number 34;niepop1;niepop2;poprawna;C
+Wielkie Krzesła na Wyspie Młyńskiej;question number 35;niepop1;niepop2;poprawna;C
+Wielkie Krzesła na Wyspie Młyńskiej;question number 36;poprawna;niepop1;niepop2;A
+Kazimierz Wielki;question number 37;poprawna;niepop2;niepop1;A
+Kazimierz Wielki;question number 38;niepop1;niepop2;poprawna;C
+Brama z luster;question number 39;niepop1;poprawna;niepop2;B
+Brama z luster;question number 40;niepop1;poprawna;niepop2;B
+Bydgoskie Autografy;question number 41;poprawna;niepop2;niepop1;A
+Bydgoskie Autografy;question number 42;niepop2;niepop1;poprawna;C
+Pomnik Wiose;question number 43;poprawna;niepop1;niepop2;A
+Pomnik Wiose;question number 44;poprawna;niepop2;niepop1;A
+Łuczniczka Nova;question number 45;poprawna;niepop1;niepop2;A
+Łuczniczka Nova;question number 46;niepop2;niepop1;poprawna;C
+18. Południk;question number 47;niepop2;niepop1;poprawna;C
+18. Południk;question number 48;niepop1;poprawna;niepop2;B
+Spodnie Andrzeja;question number 49;poprawna;niepop2;niepop1;A
+Spodnie Andrzeja;question number 50;niepop1;niepop2;poprawna;C
+Pomnik Tysiąclecia Państwa Polskiego;question number 51;poprawna;niepop2;niepop1;A
+Pomnik Tysiąclecia Państwa Polskiego;question number 52;niepop1;poprawna;niepop2;B
+Apel Więźniarek;question number 53;niepop1;poprawna;niepop2;B
+Apel Więźniarek;question number 54;niepop1;niepop2;poprawna;C
+Pomnik Walki i Męczeństwa;question number 55;poprawna;niepop1;niepop2;A
+Pomnik Walki i Męczeństwa;question number 56;niepop1;poprawna;niepop2;B
+Pomnik Nieznanego Powstańca Wielkopolskiego;question number 57;niepop1;niepop2;poprawna;C
+Pomnik Nieznanego Powstańca Wielkopolskiego;question number 58;poprawna;niepop2;niepop1;A
+Runda I;question number 59;niepop1;niepop2;poprawna;C
+Runda I;question number 60;poprawna;niepop1;niepop2;A
+Fontanna Studzienka;question number 61;poprawna;niepop1;niepop2;A
+Fontanna Studzienka;question number 62;niepop2;poprawna;niepop1;B
+Trzy Gracje;question number 63;niepop1;niepop2;poprawna;C
+Trzy Gracje;question number 64;niepop1;niepop2;poprawna;C
+Przebudzenie Elfów;question number 65;niepop2;niepop1;poprawna;C
+Przebudzenie Elfów;question number 66;poprawna;niepop2;niepop1;A
+Pomnik Wincentego Witosa;question number 67;niepop2;poprawna;niepop1;B
+Pomnik Wincentego Witosa;question number 68;niepop2;niepop1;poprawna;C
+Pomnik Poległych (Stary Fordon;question number 69;poprawna;niepop2;niepop1;A
+Pomnik Poległych (Stary Fordon;question number 70;niepop2;niepop1;poprawna;C
+Pomnik Henryka Sienkiewicza;question number 71;niepop1;niepop2;poprawna;C
+Pomnik Henryka Sienkiewicza;question number 72;poprawna;niepop1;niepop2;A
+Pomnik Ignacego Jana Paderewskiego;question number 73;niepop1;niepop2;poprawna;C
+Pomnik Ignacego Jana Paderewskiego;question number 74;niepop2;niepop1;poprawna;C
+Pomnik Fryderyka Chopina;question number 75;niepop2;poprawna;niepop1;B
+Pomnik Fryderyka Chopina;question number 76;niepop2;poprawna;niepop1;B
+Pomnik Jana Sebastiana Bacha;question number 77;niepop2;niepop1;poprawna;C
+Pomnik Jana Sebastiana Bacha;question number 78;niepop1;poprawna;niepop2;B
+Pomnik Claude'a Debussy;question number 79;poprawna;niepop2;niepop1;A
+Pomnik Claude'a Debussy;question number 80;niepop1;poprawna;niepop2;B
+Pomnik Ludomira Różyckiego;question number 81;niepop2;poprawna;niepop1;B
+Pomnik Ludomira Różyckiego;question number 82;niepop1;niepop2;poprawna;C
+Pomnik Stanisława Moniuszki;question number 83;poprawna;niepop1;niepop2;A
+Pomnik Stanisława Moniuszki;question number 84;niepop2;niepop1;poprawna;C
+Pomnik Mieczysława Karłowicza;question number 85;niepop2;poprawna;niepop1;B
+Pomnik Mieczysława Karłowicza;question number 86;poprawna;niepop2;niepop1;A
+Pomnik Antonina Dvoraka;question number 87;poprawna;niepop1;niepop2;A
+Pomnik Antonina Dvoraka;question number 88;poprawna;niepop1;niepop2;A
+Pomnik Karola Kurpińskiego;question number 89;poprawna;niepop1;niepop2;A
+Pomnik Karola Kurpińskiego;question number 90;poprawna;niepop1;niepop2;A
+Zaraz Zagramy;question number 91;niepop2;niepop1;poprawna;C
+Zaraz Zagramy;question number 92;niepop1;poprawna;niepop2;B
+Obelisk gen. Henryka Dąbrowskiego;question number 93;niepop2;niepop1;poprawna;C
+Obelisk gen. Henryka Dąbrowskiego;question number 94;poprawna;niepop1;niepop2;A
+Igor Strawinski;question number 95;niepop1;poprawna;niepop2;B
+Igor Strawinski;question number 96;poprawna;niepop1;niepop2;A
+Grażyna Bacewicz;question number 97;poprawna;niepop2;niepop1;A
+Grażyna Bacewicz;question number 98;niepop2;poprawna;niepop1;B
+Polery na nabrzeżu Urbanyiego;question number 99;niepop1;poprawna;niepop2;B
+Polery na nabrzeżu Urbanyiego;question number 100;poprawna;niepop2;niepop1;A
+Obelisk na Placu Wolności;question number 101;poprawna;niepop2;niepop1;A
+Obelisk na Placu Wolności;question number 102;niepop2;niepop1;poprawna;C
+Kamień upamiętniający bydgoskich Żydów;question number 103;niepop1;poprawna;niepop2;B
+Kamień upamiętniający bydgoskich Żydów;question number 104;poprawna;niepop1;niepop2;A
+Pomnik Wędrowca;question number 105;niepop1;poprawna;niepop2;B
+Pomnik Wędrowca;question number 106;niepop2;niepop1;poprawna;C
+Pomnik krasnoludków;question number 107;poprawna;niepop1;niepop2;A
+Pomnik krasnoludków;question number 108;poprawna;niepop2;niepop1;A
+Makieta dawnej Bydgoszczy;question number 109;niepop2;poprawna;niepop1;B
+Makieta dawnej Bydgoszczy;question number 110;niepop2;poprawna;niepop1;B
