@@ -1,11 +1,11 @@
 import sqlite3
-
-
-conn = sqlite3.connect('database.db')
-
-c = conn.cursor()
+import csv
 
 def make_database():
+    conn = sqlite3.connect('database.db')
+
+    c = conn.cursor()
+
     execution = '''PRAGMA foreign_keys = ON;
 
 -- 1. UŻYTKOWNICY
@@ -28,15 +28,18 @@ CREATE TABLE Statue (
     image_path TEXT,
     location_lat REAL,   -- Szerokość geograficzna (do obliczania odległości)
     location_lon REAL,   -- Długość geograficzna
-    
-    -- QUIZ (Jedno pytanie na pomnik)
+);
+
+
+CREATE TABLE Quiz (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
     quiz_question TEXT,  -- Np. "Jaki kolor ma czapka?"
     option_a TEXT,       -- Odpowiedź A
     option_b TEXT,       -- Odpowiedź B
     option_c TEXT,       -- Odpowiedź C
     correct_answer TEXT, -- Np. 'A'
-    
-    mode_tag TEXT        -- Np. 'Historyczny', 'Artystyczny' (do wyboru trybu)
+
 );
 
 -- 3. GASTRONOMIA (Nagroda po 2 punktach)
@@ -117,3 +120,32 @@ CREATE TABLE User_Badges (
     finally:
         conn.commit()
         conn.close()
+
+
+
+def get_db_connection():
+    conn = sqlite3.connect('database.db')
+
+    conn.execute("PRAGMA foreign_keys = ON")
+
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def load_statues_csv_to_base(filename):
+    conn = sqlite3.connect('database.db')
+
+    cur = conn.cursor()
+
+
+    with open(filename) as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            exec = "INSERT INTO STATUE(name, description, img_path) VALUES ()"
+            cur.execute(exec)
+
+
+
+
+
+
