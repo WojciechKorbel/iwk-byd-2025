@@ -48,19 +48,14 @@ def game_data():
         # Znajdujemy quiz pasujący do nazwy pomnika
         quiz = next((q for q in quizzes if q['name'] == statue['name']), None)
         
-        # Budujemy obiekt IDEALNIE pasujący do Twojego script.js
         item = {
             'id': statue['id'],
             'name': statue['name'],
             'lat': statue['location_lat'],
-            'lng': statue['location_lon'], # JS chce 'lng'
-            
-            # W CSV opis jest jeden, w JS używasz go jako hint i info
+            'lng': statue['location_lon'],
             'hint': statue['description'],
-            'info': statue['description'],
-            
+            'info': statue['description'],            
             'image': statue['image_path'],
-            
             'quiz': {
                 'question': quiz['quiz_question'] if quiz else "Brak pytania w bazie.",
                 'answers': {
@@ -71,7 +66,7 @@ def game_data():
                 'correct': quiz['correct_answer'] if quiz else 'a'
             },
             
-            # Dodajemy domyślne rekomendacje, bo JS tego wymaga, a nie ma ich w CSV
+            # Dodajemy domyślne rekomendacje
             'recommendations': [
                 { 'icon': '⭐', 'name': 'Ciekawe miejsce', 'desc': 'Rozejrzyj się wokoło!' }
             ]
@@ -81,7 +76,7 @@ def game_data():
     return jsonify(combined_data)
 
 def fetch_activities(age_group):
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect('database.db')
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cur.execute("SELECT name, description, lat, lon FROM Activity WHERE target_age_group = ?", (age_group,))

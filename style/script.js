@@ -28,9 +28,8 @@ let targets = [];
 
 // Funkcja pomocnicza do konwersji współrzędnych
 function parseCoord(coord) {
-    if (!coord) return 0; // Jeśli puste, zwróć 0
+    if (!coord) return 0;
     if (typeof coord === 'string') {
-        // Usuwamy ewentualne spacje i zamieniamy przecinek na kropkę
         return parseFloat(coord.trim().replace(',', '.'));
     }
     return coord;
@@ -42,12 +41,10 @@ async function loadGameData() {
         const response = await fetch('/api/game-data');
         console.log("Response status:", response.status);
         const data = await response.json();
-        console.log("DATA W JS:", data);
-
+        console.log("DATA W JS:", data); 
         allMonuments = data;
         console.log("allMonuments.length =", allMonuments.length);
         console.log("Pierwszy obiekt:", allMonuments[0]);
-
     } catch (err) {
         console.error("FETCH ERROR:", err);
     }
@@ -68,11 +65,8 @@ function startLevel(difficulty) {
     let tempTargets = [...allMonuments];
     tempTargets.sort(() => Math.random() - 0.5);
 
-    // Ustalamy limit
-    // Domyślnie 5 (easy)
     let limit = 5; 
     
-    // Jeśli wybrano 'hard' LUB 'trudny' -> 10
     if (difficulty === 'hard') {
         limit = 10;
     }
@@ -97,19 +91,18 @@ let completedQuests = 0;
 let prevLng = 18.005;
 let userName = "";
 
-// Start (Opera Nova)
+// Punkt startowy
 let currentLat = 53.123000;
 let currentLng = 18.005000;
 
-// --- MAPA ---
+// MAPA
 const map = L.map('map', { keyboard: false }).setView([currentLat, currentLng], 16);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// --- CEL I GRACZ ---
-// Tworzymy markery, ale jeszcze ich nie ustawiamy (czekamy na dane)
+// CEL I GRACZ
 let targetMarker = L.marker([0, 0]); 
 
 const characterIcon = L.divIcon({
@@ -130,7 +123,7 @@ const characterIcon = L.divIcon({
 let userMarker = L.marker([currentLat, currentLng], { icon: characterIcon }).addTo(map);
 
 // -------------------------------------------------------------------------------------
-// --- KONFIGURACJA ODZNAK ---
+// KONFIGURACJA ODZNAK
 const BADGES = [
     { 
         threshold: 2, 
@@ -156,7 +149,7 @@ const BADGES = [
 ];
 
 function checkBadges() {
-    // Szukamy odznaki dla AKTUALNEJ liczby ukończonych zadań
+    // szukanie odznaki
     const earnedBadge = BADGES.find(b => b.threshold === completedQuests);
 
     if (earnedBadge) {
@@ -181,7 +174,6 @@ function checkBadges() {
                     popup: 'animated tada'
                 }
             });
-            // Konfetti dla efektu wow
             confetti({
                 particleCount: 150,
                 spread: 100,
@@ -259,14 +251,7 @@ function startGame() {
 
     setTimeout(() => {
         welcomeScreen.style.display = "none";
-
-        // document.getElementById('game-ui-top').style.display = "flex";
-        // document.getElementById('game-ui-bottom').style.display = "block";
-
-        // 🔥 KLUCZOWE LINIE (WCZEŚNIEJ ICH NIE BYŁO)
-        startLevel(userLevel);       // ← losuje targets
-        initGameAfterLoad();         // ← ustawia cel, UI, marker
-
+        startLevel(userLevel);
         map.getContainer().focus();
     }, 500);
 }
@@ -301,7 +286,7 @@ function updatePosition(lat, lng) {
 
     // --- BEZPIECZEŃSTWO: sprawdzamy czy istnieje cel ---
     const activeTarget = targets[currentTargetIndex];
-    if (!activeTarget) return;  // jeśli brak celu, kończymy funkcję
+    if (!activeTarget) return;
 
     // OBLICZANIE DYSTANSU I UI
     const dist = Math.floor(L.latLng(currentLat, currentLng)
@@ -310,7 +295,7 @@ function updatePosition(lat, lng) {
     const txt = document.getElementById('dist-text');
     const btn = document.getElementById('btn-action');
 
-    if (!txt || !btn) return;  // jeśli elementy nie istnieją, nic nie robimy
+    if (!txt || !btn) return;
     if (btn.classList.contains('done')) return;
 
     if (dist < 30) {
@@ -381,11 +366,60 @@ async function loadNearbyActivities(ageGroup) {
         return data.map(act => ({
             name: act.name,
             desc: act.description,
-            icon: "📍"  // możesz zmienić ikonę np. według typu
+            lat: parseFloat(act.lat),
+            lon: parseFloat(act.lon),
+            icon: "📍"
         }));
+
     } catch (err) {
         console.error("Błąd ładowania aktywności:", err);
         return [];
+    }
+}
+
+// Funkcja licząca odległość w metrach między dwoma współrzędnymi
+function getDistance(lat1, lng1, lat2, lng2) {
+    return L.latLng(lat1, lng1).distanceTo(L.latLng(lat2, lng2));
+}
+
+// Przygotowanie rekomendacji: filtrujemy po wieku i wybieramy najbliższą
+async function prepareRecommendations(activeTarget) {
+    try {
+        // Pobierz wszystkie atrakcje dla grupy wiekowej
+        const response = await fetch(`/api/activities/${userAge}`);
+        const activities = await response.json();
+        console.log("ACTIVITIES:", activities);
+
+        if (!activities || activities.length === 0) {
+            activeTarget.recommendations = [];
+            return;
+        }
+
+        const monLat = parseCoord(activeTarget.lat);
+        const monLng = parseCoord(activeTarget.lng);
+
+        // Oblicz dystans dla każdej atrakcji
+        const activitiesWithDistance = activities.map(act => ({
+            ...act,
+            distance: getDistance(monLat, monLng, parseCoord(act.lat), parseCoord(act.lng))
+        }));
+
+        // Sortujemy po dystansie
+        activitiesWithDistance.sort((a, b) => a.distance - b.distance);
+
+        // Wybieramy np. 3 najbliższe (możesz zmienić na 1 jeśli chcesz tylko jedną)
+        const nearest = activitiesWithDistance.slice(0, 3);
+
+        // Przypisujemy do aktywnego celu
+        activeTarget.recommendations = nearest.map(act => ({
+            name: act.name,
+            desc: act.description,
+            icon: "📍"
+        }));
+
+    } catch (err) {
+        console.error("Błąd przygotowania rekomendacji:", err);
+        activeTarget.recommendations = [];
     }
 }
 
@@ -405,7 +439,6 @@ function showRecommendations(activeTarget) {
                 </div>`;
         });
     } else {
-        // Jeśli brak danych w pliku, wyświetlamy domyślną treść
         recHtml += `
             <div style="background: #fff3cd; padding: 10px; border-radius: 10px; border-left: 5px solid #ffc107;">
                 <strong>🏛️ Rozejrzyj się!</strong><br>
@@ -485,10 +518,8 @@ function startQuiz() {
             confirmButtonColor: '#28a745'
         }).then((scoreResult) => {
             
-            // --- TUTAJ DEFINIUJEMY LOGIKĘ KOLEJNOŚCI ---
-
+            // LOGIKA KOLEJNOSCI
             // Funkcja, która sprawdza odznakę i idzie dalej
-            // Wywołamy ją dopiero, gdy gracz skończy oglądać rekomendacje (lub je pominie)
             const proceedToBadgeAndNextLevel = () => {
                 const earnedBadge = BADGES.find(b => b.threshold === completedQuests);
 
@@ -511,36 +542,25 @@ function startQuiz() {
                         confirmButtonText: 'Dumnie przyjmuję!',
                         confirmButtonColor: '#d4af37'
                     }).then(() => {
-                        // Dopiero po zamknięciu odznaki -> Następny poziom
                         goToNextLevelOrFinish();
                     });
                     
                     confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
                 } else {
-                    // Brak odznaki -> Od razu następny poziom
                     goToNextLevelOrFinish();
                 }
             };
 
-            // --- GŁÓWNA DECYZJA (Rekomendacje czy Dalej?) ---
-            
+            // GŁÓWNA DECYZJA
             if (scoreResult.isDenied) {
-                // SCENARIUSZ A: Gracz kliknął "Co warto zobaczyć"
-                // Pobieramy rekomendacje dopasowane do wieku
-                loadNearbyActivities(userAge).then(activities => {
-                    activeTarget.recommendations = activities;  // wstawiamy do activeTarget
-                    // Dopiero teraz pokazujemy rekomendacje
-                    showRecommendations(activeTarget).then(() => {
-                        // Po zamknięciu rekomendacji sprawdzamy odznakę i idziemy dalej
+                prepareRecommendations(activeTarget)
+                    .then(() => showRecommendations(activeTarget))
+                    .then(() => proceedToBadgeAndNextLevel())
+                    .catch(err => {
+                        console.error("Błąd przygotowania rekomendacji:", err);
                         proceedToBadgeAndNextLevel();
                     });
-                }).catch(err => {
-                    console.error("Błąd ładowania rekomendacji:", err);
-                    // Jeśli coś pójdzie nie tak, i tak idziemy dalej
-                    proceedToBadgeAndNextLevel();
-                });
             } else {
-                // SCENARIUSZ B: Gracz kliknął "Lecimy dalej"
                 proceedToBadgeAndNextLevel();
             }
 
@@ -569,35 +589,31 @@ function initGameAfterLoad() {
 
     // --- LOGIKA POZIOMÓW ---
     if (userLevel === 'hard' || userLevel === 'trudny') {
-        // TRUDNY:
-        // Tytuł to zagadka (ukrywamy nazwę)
+        // Tytuł to zagadka
         titleEl.innerText = `Cel: ${firstTarget.hint}`; 
         titleEl.style.fontSize = "1.1rem"; 
         titleEl.style.lineHeight = "1.4";
 
-        // 2. Ukrywamy dolny tekst zagadki
+        // Ukrywamy dolny tekst zagadki
         if (riddleEl) riddleEl.style.display = 'none';
 
-        // 3. TŁO: Czyścimy tło (brak zdjęcia na trudnym!)
+        // TŁO: Czyścimy tło (brak zdjęcia na trudnym!)
         if (cardEl) {
             cardEl.style.backgroundImage = 'none';
         }
         
     } else {
-        // ŁATWY:
-        // 1. Tytuł to nazwa pomnika
+        // Tytuł to nazwa pomnika
         titleEl.innerText = `Cel: ${firstTarget.name}`;
         titleEl.style.fontSize = ""; 
         
-        // 2. Pokazujemy zagadkę pod spodem
+        // Pokazujemy zagadkę pod spodem
         if (riddleEl) {
             riddleEl.style.display = 'block';
             riddleEl.innerText = `"${firstTarget.hint}"`;
         }
 
-        // 3. TŁO: Ustawiamy zdjęcie pomnika (jako super podpowiedź)
         if (cardEl && firstTarget.image) {
-            // Używamy gradientu, żeby przyciemnić zdjęcie (żeby tekst był czytelny)
             cardEl.style.backgroundImage = `
                 linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), 
                 url('${firstTarget.image}')
@@ -607,7 +623,6 @@ function initGameAfterLoad() {
         }
     }
     
-    // Reszta bez zmian
     targetMarker.setLatLng([firstTarget.lat, firstTarget.lng]);
     document.getElementById('goal-board').innerText = `Cel: 0/${targets.length}`;
 }
@@ -620,7 +635,7 @@ function loadNextLevel() {
     
     const titleEl = document.querySelector('.quest-title');
     const riddleEl = document.querySelector('.quest-riddle');
-    const cardEl = document.querySelector('.quest-card'); // Pobieramy kartę
+    const cardEl = document.querySelector('.quest-card');
 
     // Reset przycisku
     const btn = document.getElementById('btn-action');
@@ -636,8 +651,6 @@ function loadNextLevel() {
         titleEl.style.fontSize = "1.1rem";
         titleEl.style.lineHeight = "1.4";
         if (riddleEl) riddleEl.style.display = 'none';
-        
-        // TRUDNY: Brak zdjęcia w tle
         if (cardEl) cardEl.style.backgroundImage = 'none';
 
     } else {
@@ -648,7 +661,6 @@ function loadNextLevel() {
             riddleEl.innerText = `"${nextTarget.info}"`;
         }
 
-        // ŁATWY: Zdjęcie w tle
         if (cardEl && nextTarget.image) {
             cardEl.style.backgroundImage = `
                 linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), 
@@ -658,7 +670,6 @@ function loadNextLevel() {
             cardEl.style.backgroundPosition = 'center';
         }
     }
-    // ----------------------
 
     document.getElementById('dist-text').innerText = "Szukam sygnału...";
     document.getElementById('dist-text').style.color = "#CC3300";
@@ -666,9 +677,6 @@ function loadNextLevel() {
     targetMarker.setLatLng([nextTarget.lat, nextTarget.lng]);
     map.setView([currentLat, currentLng], 15);
 }
-
-// Inicjalizacja
-// updatePosition(currentLat, currentLng);
 
 // ---------------------------------------------------------------------------------------------------------------------
 // EKRAN Z WYNIKAMI KONCOWYMI
