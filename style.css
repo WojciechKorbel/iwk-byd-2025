@@ -6,7 +6,7 @@ body {
     font-family: 'Quicksand', sans-serif; 
     overflow: hidden; 
 }
-        
+
 #map { 
     width: 100%; 
     height: 100vh; 
@@ -233,6 +233,7 @@ h1 {
     border-radius: 50px; 
     display: flex; 
     justify-content: space-between; 
+    align-items: center;
     font-weight: 700; 
     letter-spacing: 1px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
@@ -247,7 +248,7 @@ h1 {
     right: 20px; 
     
     /* Efekt matowego szkła */
-    background: rgba(0, 20, 40, 0.85); 
+    background: rgba(0, 20, 40, 0.85) !important; 
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -317,12 +318,9 @@ h1 {
 .btn-checkin { 
     width: 100%; 
     padding: 18px; 
-    
-    /* Nieaktywny = Szklany */
-    background: rgba(255, 255, 255, 0.1); 
+    background: rgba(255, 255, 255, 0.75); 
     color: #003366;
     border: 1px solid rgba(255, 255, 255, 0.05);
-    
     border-radius: 15px; 
     font-size: 16px; 
     font-weight: 700; 
@@ -330,12 +328,13 @@ h1 {
     letter-spacing: 1px;
     cursor: not-allowed; 
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 100;
 }
 
 /* Aktywny = Neonowy Gradient */
 .btn-checkin.active { 
     background: linear-gradient(45deg, #ff0000, #ff5e00); 
-    color: white; 
+    color: white !important; 
     border: none;
     cursor: pointer; 
     box-shadow: 0 5px 20px rgba(255, 69, 0, 0.4);
@@ -473,15 +472,11 @@ h1 {
 }
 
 .results-content {
-    /* Ciemne Szkło */
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    
-    /* Złota ramka i poświata */
     border: 1px solid rgba(255, 215, 0, 0.3);
     box-shadow: 0 0 50px rgba(255, 215, 0, 0.15), inset 0 0 20px rgba(255, 215, 0, 0.05);
-    
     padding: 50px 30px;
     border-radius: 40px;
     width: 90%;
@@ -496,8 +491,6 @@ h1 {
     margin: 10px 0 20px 0;
     text-transform: uppercase;
     letter-spacing: 2px;
-    
-    /* Gradientowy tekst */
     background: linear-gradient(to right, #FFD700, #FFA500, #FFD700);
     -webkit-background-clip: text;
     background-clip: text;
@@ -686,4 +679,146 @@ h1 {
     color: white;
     font-size: 30px;
     cursor: pointer;
+}
+
+#game-ui-top {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    /* To sprawia, że pierwszy element (odznaki) idzie w lewo, a drugi (cel) w prawo */
+    justify-content: space-between; 
+    align-items: center;
+    z-index: 1000;
+    pointer-events: none; /* Żeby klikanie przechodziło przez puste miejsca */
+}
+
+/* Styl kontenera na odznaki */
+#top-badges-container {
+    display: flex;
+    gap: 5px; /* Odstęp między odznakami */
+    pointer-events: auto; /* Żeby można było najechać myszką na odznakę */
+    margin: 0;
+}
+
+/* Pomniejszone odznaki pasujące do paska */
+.mini-badge {
+    width: 30px;
+    height: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+    cursor: help;
+}
+
+.mini-badge:hover {
+    transform: scale(1.2);
+}
+
+/* Animacja pojawiania się (pop) */
+@keyframes popIn {
+    0% { transform: scale(0); }
+    80% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.badge-pop {
+    animation: popIn 0.5s ease-out forwards;
+}
+
+/* --- NOWOCZESNY STYL OKIENKA (MODERN UI) --- */
+
+/* 1. KONTENER (POPUP) */
+.swal2-popup {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px) !important; 
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-radius: 25px !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;    
+    padding: 2em !important;
+}
+
+/* 2. TYTUŁ I TEKST */
+.swal2-title {
+    color: #333 !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.5px !important;
+}
+
+.swal2-html-container {
+    color: #666 !important;
+    font-size: 1.1em !important;
+    line-height: 1.6 !important;
+}
+
+/* --- CIEMNOZIELONA IKONA SUKCESU --- */
+div:where(.swal2-icon).swal2-success {
+    border-color: #1e7e34 !important; 
+    color: #1e7e34 !important; 
+}
+
+/* 2. Sam "Ptaszek" (kreski) */
+div:where(.swal2-icon).swal2-success .swal2-success-line-tip,
+div:where(.swal2-icon).swal2-success .swal2-success-line-long {
+    background-color: #1e7e34 !important; 
+}
+
+/* Naprawiamy "zaślepkę" animacji (częsty problem w SweetAlert) */
+div:where(.swal2-icon).swal2-success .swal2-success-fix {
+    background-color: transparent !important;
+}
+
+div:where(.swal2-icon).swal2-success .swal2-success-circular-line-left,
+div:where(.swal2-icon).swal2-success .swal2-success-circular-line-right {
+    background-color: transparent !important;
+}
+
+/* NOWOCZESNE PRZYCISKI (Gradienty i pigułki) */
+.swal2-confirm, .swal2-deny {
+    border-radius: 50px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none !important;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.3s ease !important;
+    padding: 12px 30px !important;
+}
+
+/* Przycisk "Dalej" - Zielony Gradient */
+.swal2-confirm {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important;
+}
+
+/* Przycisk "Co warto zobaczyć" - Niebieski Gradient */
+.swal2-deny {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+}
+
+/* Efekt najechania myszką (Uniesienie) */
+.swal2-styled:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Efekt kliknięcia */
+.swal2-styled:active {
+    transform: translateY(-1px) !important;
+}
+
+/* --- IKONA PYTANIA (?) - NIEBIESKA --- */
+div:where(.swal2-icon).swal2-question {
+    border-color: #007bff !important; 
+    color: #007bff !important; 
+}
+
+/* --- IKONA INFO (i) - ZIELONA --- */
+div:where(.swal2-icon).swal2-info {
+    border-color: #1e7e34 !important; 
+    color: #1e7e34 !important; 
+}
+
+div.swal2-radio {
+    background-color: rgba(255, 255, 255, 0.1) !important;
 }

@@ -76,69 +76,83 @@ function startGame() {
 // -------------------------------------------------------------------------------------
 // KONFIGURACJA DANYCH (ŁADOWANIE Z CSV)
 
-// Zmienna na cele
+// Pomniki
+let allMonuments = [];
 let targets = [];
 
 // Funkcja pomocnicza do konwersji współrzędnych
 function parseCoord(coord) {
+    if (!coord) return 0; // Jeśli puste, zwróć 0
     if (typeof coord === 'string') {
-        return parseFloat(coord.replace(',', '.'));
+        // Usuwamy ewentualne spacje i zamieniamy przecinek na kropkę
+        return parseFloat(coord.trim().replace(',', '.'));
     }
     return coord;
 }
 
-// 3. Główna funkcja ładująca i łącząca 3 pliki CSV
+// Główna funkcja ładująca i łącząca 4 pliki CSV
 async function loadGameData() {
     try {
         console.log("Ładowanie danych...");
 
-        const [pomnikiRes, opisyRes, pytaniaRes] = await Promise.all([
-            fetch('datas/pomniki.csv'),
-            fetch('datas/opisy.csv'),
-            fetch('datas/pytania.csv')
+        // Zmieniono: Dodano fetch dla lat_lon.csv
+        const [pomnikiRes, opisyRes, pytaniaRes, latLonRes] = await Promise.all([
+            fetch('./pomniki.csv'),
+            fetch('./opisy.csv'),
+            fetch('./pytania.csv'),
+            fetch('./lat_lon.csv')
         ]);
 
         const pomnikiText = await pomnikiRes.text();
         const opisyText = await opisyRes.text();
         const pytaniaText = await pytaniaRes.text();
+        const latLonText = await latLonRes.text();
 
         // Parsowanie CSV
         const pomnikiData = Papa.parse(pomnikiText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
         const opisyData = Papa.parse(opisyText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
         const pytaniaData = Papa.parse(pytaniaText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
+        const latLonData = Papa.parse(latLonText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
 
-        // ŁĄCZENIE DANYCH (Teraz łączymy po 'name', bo tak masz w plikach!)
-        targets = pomnikiData.map(pomnik => {
-            // Szukamy po nazwie, bo w plikach nie ma wspólnego ID
-            const opisRow = opisyData.find(o => o.name === pomnik.name);
-            const pytanieRow = pytaniaData.find(p => p.name === pomnik.name);
+        // ŁĄCZENIE DANYCH
+        allMonuments = pomnikiData.map(pomnik => {
+            // Normalizacja nazwy (usuwamy białe znaki z początku/końca, żeby łączenie po nazwie działało pewniej)
+            const cleanName = pomnik.name.trim();
 
-            // Zabezpieczenie na brak współrzędnych (żeby gra nie wybuchła, jeśli zapomnisz dodać lat/lon)
-            // Domyślnie ustawi środek Bydgoszczy, jeśli w pliku będzie pusto.
-            let latitude = parseCoord(pomnik.lat);
-            let longitude = parseCoord(pomnik.lon);
+            const opisRow = opisyData.find(o => o.name.trim() === cleanName);
+            const pytanieRow = pytaniaData.find(p => p.name.trim() === cleanName);
             
-            if (latitude === 0 || longitude === 0) {
-                console.warn(`Brak współrzędnych dla: ${pomnik.name}. Używam domyślnych.`);
-                // Możesz tu wpisać współrzędne "startowe" jako awaryjne
+            // Zmieniono: Szukamy współrzędnych w pliku lat_lon.csv
+            const latLonRow = latLonData.find(l => l.name.trim() === cleanName);
+
+            // Logika wyboru współrzędnych:
+            // Najpierw sprawdzamy lat_lon.csv, jeśli tam nie ma, bierzemy z pomniki.csv
+            let rawLat = latLonRow ? latLonRow.lat : pomnik.lat;
+            let rawLon = latLonRow ? latLonRow.lon : pomnik.lon;
+
+            let latitude = parseCoord(rawLat);
+            let longitude = parseCoord(rawLon);
+            
+            if (latitude === 0 || longitude === 0 || isNaN(latitude)) {
+                console.warn(`Brak poprawnych współrzędnych dla: ${cleanName}. Używam domyślnych.`);
                 latitude = 53.123; 
                 longitude = 18.000;
             }
 
             return {
                 id: pomnik.id,
-                name: pomnik.name,
+                name: cleanName,
                 lat: latitude,
                 lng: longitude,
                 
-                // Opisy: w pliku masz kolumnę 'description'
+                // Opisy
                 hint: opisRow ? opisRow.description : "Znajdź ten punkt na mapie!",
-                info: opisRow ? opisRow.description : "Brak dodatkowego opisu.", // Używamy tego samego opisu, bo w pliku jest tylko jeden
+                info: opisRow ? opisRow.description : "Brak dodatkowego opisu.",
                 
-                // Zdjęcie z Twojego pliku CSV
+                // Zdjęcie
                 image: pomnik.image || "https://via.placeholder.com/800x1200?text=Brak+Zdjecia",
                 
-                // Quiz: dopasowany do nazw kolumn w Twoim pliku (ansA, ansB, correct)
+                // Quiz
                 quiz: {
                     question: pytanieRow ? pytanieRow.question : "Brak pytania dla tego miejsca.",
                     answers: {
@@ -146,11 +160,9 @@ async function loadGameData() {
                         'b': pytanieRow ? pytanieRow.ansB : "",
                         'c': pytanieRow ? pytanieRow.ansC : ""
                     },
-                    // W pliku masz 'A', 'B' - zamieniamy na małe litery 'a', 'b'
                     correct: pytanieRow ? pytanieRow.correct.toLowerCase().trim() : 'a'
                 },
                 
-                // Rekomendacje (nie ma ich w CSV, więc dodaję domyślne)
                 recommendations: [
                     { icon: '⭐', name: 'Atrakcja w pobliżu', desc: 'Warto zobaczyć!' }
                 ]
@@ -160,19 +172,48 @@ async function loadGameData() {
         // Mieszamy kolejność
         targets.sort(() => Math.random() - 0.5);
 
-        console.log("Dane załadowane poprawnie!", targets);
-        
-        // Inicjalizacja gry nowymi danymi
-        initGameAfterLoad();
+        console.log(`Załadowano ${targets.length} punktów.`, targets);
+
+        startLevel('easy');
 
     } catch (error) {
         console.error("Błąd krytyczny:", error);
-        alert("Błąd danych! Sprawdź czy dodałeś kolumny lat/lon do pomniki.csv");
+        alert("Błąd ładowania danych! Zobacz konsolę (F12).");
     }
 }
 
-// Uruchamiamy ładowanie
 loadGameData();
+
+// -------------------------------------------------------------------------------------
+// POZIOM TRUDNOSCI
+function startLevel(difficulty) {
+    // Sprawdzamy czy są dane
+    if (typeof allMonuments === 'undefined' || allMonuments.length === 0) {
+        console.warn("Dane jeszcze się nie załadowały!");
+        return;
+    }
+
+    // Kopiujemy i mieszamy
+    let tempTargets = [...allMonuments];
+    tempTargets.sort(() => Math.random() - 0.5);
+
+    // Ustalamy limit
+    // Domyślnie 5 (easy)
+    let limit = 5; 
+    
+    // Jeśli wybrano 'hard' LUB 'trudny' -> 10
+    if (difficulty === 'hard') {
+        limit = 10;
+    }
+
+    // Wycinamy
+    targets = tempTargets.slice(0, Math.min(limit, tempTargets.length));
+
+    console.log(`Rozpoczynam poziom: ${difficulty}. Limit: ${limit}. Wylosowano: ${targets.length}`);
+
+    // Start gry
+    initGameAfterLoad(); 
+}
 
 // -------------------------------------------------------------------------------------
 // DALSZA CZĘŚĆ GRY (ZMIENNE I LOGIKA)
@@ -217,6 +258,80 @@ const characterIcon = L.divIcon({
 
 let userMarker = L.marker([currentLat, currentLng], { icon: characterIcon }).addTo(map);
 
+// -------------------------------------------------------------------------------------
+// --- KONFIGURACJA ODZNAK ---
+const BADGES = [
+    { 
+        threshold: 2, 
+        name: "Brązowy Odkrywca", 
+        icon: "🥉", 
+        desc: "Odwiedziłeś 2 miejsca! Tak trzymaj!",
+        img: "https://cdn-icons-png.flaticon.com/512/2583/2583434.png" 
+    },
+    { 
+        threshold: 4, 
+        name: "Srebrny Podróżnik", 
+        icon: "🥈", 
+        desc: "Już 4 pomniki za Tobą! Tak trzymaj!",
+        img: "https://cdn-icons-png.flaticon.com/512/2583/2583319.png" 
+    },
+    { 
+        threshold: 5, 
+        name: "Złoty Legendarny Mistrz", 
+        icon: "🥇", 
+        desc: "Niesamowite! Znasz miasto jak własną kieszeń.",
+        img: "https://cdn-icons-png.flaticon.com/512/2583/2583344.png" 
+    }
+];
+
+function checkBadges() {
+    // Szukamy odznaki dla AKTUALNEJ liczby ukończonych zadań
+    const earnedBadge = BADGES.find(b => b.threshold === completedQuests);
+
+    if (earnedBadge) {
+        setTimeout(() => {
+            Swal.fire({
+                title: `NOWA ODZNAKA!`,
+                text: earnedBadge.name,
+                imageUrl: earnedBadge.img,
+                imageWidth: 150,
+                imageHeight: 150,
+                imageAlt: 'Badge Image',
+                html: `
+                    <h3 style="color: #d4af37;">${earnedBadge.icon} ${earnedBadge.name}</h3>
+                    <p>${earnedBadge.desc}</p>
+                `,
+                confirmButtonText: 'Dumnie przyjmuję!',
+                confirmButtonColor: '#d4af37',
+                padding: '2em',
+                color: '#716add',
+                background: '#fff url(/images/trees.png)',
+                customClass: {
+                    popup: 'animated tada'
+                }
+            });
+            // Konfetti dla efektu wow
+            confetti({
+                particleCount: 150,
+                spread: 100,
+                origin: { y: 0.6 }
+            });
+        }, 600);
+    }
+}
+
+function addBadgeToCard(badge) {
+    const container = document.getElementById('badges-container');
+    if (!container) return; 
+    
+    const img = document.createElement('img');
+    img.src = badge.img;
+    img.className = 'mini-badge badge-pop'; 
+    img.title = `${badge.name}: ${badge.desc}`;
+    container.appendChild(img);
+}
+
+// -------------------------------------------------------------------------------------
 // ŚCIEŻKA (CZERWONA KRESKA)
 let pathHistory = [];
 
@@ -331,7 +446,8 @@ function updatePosition(lat, lng) {
         txt.innerText = `Dystans: ${dist} metrów`;
         txt.style.color = "#CC3300";
         btn.innerText = "Jeszcze za daleko...";
-        btn.style.background = "#ccc";
+        btn.style.background = "";
+        btn.style.color = "";
         btn.classList.remove('active');
         btn.disabled = true;
     }
@@ -379,12 +495,49 @@ function closeMonumentScreen() {
     document.getElementById('monument-screen').style.display = 'none';
 }
 
+// -------------------------------------------------------------------------
+// FUNKCJA POKAZUJĄCA REKOMENDACJE
+function showRecommendations(activeTarget) {
+    console.log("Otwieram rekomendacje dla:", activeTarget.name);
+
+    let recHtml = '<div style="text-align: left;">';
+
+    // SPRAWDZAMY CZY SĄ DANE (Zabezpieczenie przed błędem)
+    if (activeTarget.recommendations && activeTarget.recommendations.length > 0) {
+        activeTarget.recommendations.forEach(rec => {
+            recHtml += `
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #007bff;">
+                    <strong style="font-size: 18px;">${rec.icon} ${rec.name}</strong><br>
+                    <span style="color: #666; font-size: 14px;">${rec.desc}</span>
+                </div>`;
+        });
+    } else {
+        // Jeśli brak danych w pliku, wyświetlamy domyślną treść
+        recHtml += `
+            <div style="background: #fff3cd; padding: 10px; border-radius: 10px; border-left: 5px solid #ffc107;">
+                <strong>🏛️ Rozejrzyj się!</strong><br>
+                W okolicy tego miejsca na pewno znajdziesz ciekawą architekturę lub kawiarnię.
+            </div>`;
+    }
+
+    recHtml += '</div>';
+    
+    // Wyświetlamy okno i zwracamy Promise (ważne dla kolejności zdarzeń!)
+    return Swal.fire({
+        title: 'WARTO ZOBACZYĆ:',
+        html: recHtml,
+        confirmButtonText: 'Super, idę dalej ▶',
+        confirmButtonColor: '#28a745',
+        backdrop: `rgba(0,0,0,0.5)`
+    });
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // START QUIZU
 function startQuiz() {
     const activeTarget = targets[currentTargetIndex];
 
-    // Konfiguracja SweetAlert
+    // ZADAJEMY PYTANIE
     Swal.fire({
         title: 'ZAGADKA!',
         text: activeTarget.quiz.question,
@@ -394,13 +547,11 @@ function startQuiz() {
         confirmButtonText: 'Sprawdź',
         confirmButtonColor: '#003366',
         inputValidator: (value) => { if (!value) return 'Wybierz odpowiedź!' },
-        didOpen: () => {
-            document.querySelector('.swal2-container').style.zIndex = '10000';
-        }
+        didOpen: () => { document.querySelector('.swal2-container').style.zIndex = '10000'; }
     }).then((result) => {
         if (result.isDismissed) return;
 
-        // --- Logika Punktów ---
+        // --- OBLICZANIE PUNKTÓW ---
         const userAnswer = result.value;
         let pointsEarned = 100;
         let msgTitle = "DOBRE CHĘCI...";
@@ -415,87 +566,203 @@ function startQuiz() {
             confetti();
         }
 
-        // Zamknij ekran ze zdjęciem (wracamy do mapy)
         closeMonumentScreen();
 
-        // Zapisz wyniki
+        // Aktualizacja stanu gry
         currentScore += pointsEarned;
-        completedQuests++;
+        completedQuests++; 
+        
+        // UI
         document.getElementById('score-board').innerText = `🏆 Pkt: ${currentScore}`;
         document.getElementById('goal-board').innerText = `Cel: ${completedQuests}/${targets.length}`;
 
-        // Zablokuj przycisk mapy
         const btn = document.getElementById('btn-action');
         btn.innerText = "ZADANIE UKOŃCZONE!";
-        btn.style.background = "#28a745";
         btn.classList.add('done');
 
-        // Pokaż wynik i rekomendacje
+        // POKAZUJEMY WYNIK PUNKTOWY
         Swal.fire({
             title: msgTitle,
             html: message,
             icon: msgIcon,
-            iconColor: '#28a745',
             showDenyButton: true,
             denyButtonText: '👀 Co warto zobaczyć obok?',
             denyButtonColor: '#007bff',
             confirmButtonText: 'Lecimy dalej ▶',
-            confirmButtonColor: '#28a745',
-            customClass: { popup: 'epic-popup' }
-        }).then((res) => {
-            const nextStep = () => {
-                if (completedQuests >= targets.length) showResults();
-                else loadNextLevel();
+            confirmButtonColor: '#28a745'
+        }).then((scoreResult) => {
+            
+            // --- TUTAJ DEFINIUJEMY LOGIKĘ KOLEJNOŚCI ---
+
+            // Funkcja, która sprawdza odznakę i idzie dalej
+            // Wywołamy ją dopiero, gdy gracz skończy oglądać rekomendacje (lub je pominie)
+            const proceedToBadgeAndNextLevel = () => {
+                const earnedBadge = BADGES.find(b => b.threshold === completedQuests);
+
+                if (earnedBadge) {
+                    console.log("Przyznaję odznakę:", earnedBadge.name);
+                    addBadgeToCard(earnedBadge);
+
+                    // Pokazujemy Odznakę
+                    Swal.fire({
+                        title: `NOWA ODZNAKA!`,
+                        text: earnedBadge.name,
+                        imageUrl: earnedBadge.img,
+                        imageWidth: 150,
+                        imageHeight: 150,
+                        html: `
+                            <h3 style="color: #d4af37;">${earnedBadge.icon} ${earnedBadge.name}</h3>
+                            <p>${earnedBadge.desc}</p>
+                        `,
+                        backdrop: `rgba(0,0,123,0.4)`,
+                        confirmButtonText: 'Dumnie przyjmuję!',
+                        confirmButtonColor: '#d4af37'
+                    }).then(() => {
+                        // Dopiero po zamknięciu odznaki -> Następny poziom
+                        goToNextLevelOrFinish();
+                    });
+                    
+                    confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+                } else {
+                    // Brak odznaki -> Od razu następny poziom
+                    goToNextLevelOrFinish();
+                }
             };
 
-            if (res.isDenied) {
-                // Rekomendacje
-                let recHtml = '<div style="text-align: left;">';
-                if(activeTarget.recommendations) {
-                    activeTarget.recommendations.forEach(rec => {
-                        recHtml += `
-                            <div style="background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #007bff;">
-                                <strong style="font-size: 18px;">${rec.icon} ${rec.name}</strong><br>
-                                <span style="color: #666; font-size: 14px;">${rec.desc}</span>
-                            </div>`;
-                    });
-                }
-                recHtml += '</div>';
-                Swal.fire({
-                    title: 'W POBLIŻU:',
-                    html: recHtml,
-                    confirmButtonText: 'Super, idę dalej ▶',
-                    confirmButtonColor: '#28a745'
-                }).then(nextStep);
+            // --- GŁÓWNA DECYZJA (Rekomendacje czy Dalej?) ---
+            
+            if (scoreResult.isDenied) {
+                // SCENARIUSZ A: Gracz kliknął "Co warto zobaczyć"
+                // Najpierw pokazujemy rekomendacje...
+                showRecommendations(activeTarget).then(() => {
+                    // ...a dopiero jak je zamknie (.then), sprawdzamy odznakę
+                    proceedToBadgeAndNextLevel();
+                });
             } else {
-                nextStep();
+                // SCENARIUSZ B: Gracz kliknął "Lecimy dalej"
+                // Od razu sprawdzamy odznakę
+                proceedToBadgeAndNextLevel();
             }
         });
     });
 }
 
+// Funkcja pomocnicza kończąca poziom
+function goToNextLevelOrFinish() {
+    if (completedQuests >= targets.length) {
+        showResults();
+    } else {
+        loadNextLevel();
+    }
+}
+
+// -------------------------------------------------------------------------------------
+// ZAKTUALIZOWANA FUNKCJA STARTOWA (INIT)
+function initGameAfterLoad() {
+    if (targets.length === 0) return;
+
+    const firstTarget = targets[0];
+    const titleEl = document.querySelector('.quest-title');
+    const riddleEl = document.querySelector('.quest-riddle');
+    const cardEl = document.querySelector('.quest-card');
+
+    // --- LOGIKA POZIOMÓW ---
+    if (userLevel === 'hard' || userLevel === 'trudny') {
+        // TRUDNY:
+        // Tytuł to zagadka (ukrywamy nazwę)
+        titleEl.innerText = `Cel: ${firstTarget.hint}`; 
+        titleEl.style.fontSize = "1.1rem"; 
+        titleEl.style.lineHeight = "1.4";
+
+        // 2. Ukrywamy dolny tekst zagadki
+        if (riddleEl) riddleEl.style.display = 'none';
+
+        // 3. TŁO: Czyścimy tło (brak zdjęcia na trudnym!)
+        if (cardEl) {
+            cardEl.style.backgroundImage = 'none';
+        }
+        
+    } else {
+        // ŁATWY:
+        // 1. Tytuł to nazwa pomnika
+        titleEl.innerText = `Cel: ${firstTarget.name}`;
+        titleEl.style.fontSize = ""; 
+        
+        // 2. Pokazujemy zagadkę pod spodem
+        if (riddleEl) {
+            riddleEl.style.display = 'block';
+            riddleEl.innerText = `"${firstTarget.hint}"`;
+        }
+
+        // 3. TŁO: Ustawiamy zdjęcie pomnika (jako super podpowiedź)
+        if (cardEl && firstTarget.image) {
+            // Używamy gradientu, żeby przyciemnić zdjęcie (żeby tekst był czytelny)
+            cardEl.style.backgroundImage = `
+                linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), 
+                url('${firstTarget.image}')
+            `;
+            cardEl.style.backgroundSize = 'cover';
+            cardEl.style.backgroundPosition = 'center';
+        }
+    }
+    
+    // Reszta bez zmian
+    targetMarker.setLatLng([firstTarget.lat, firstTarget.lng]);
+    document.getElementById('goal-board').innerText = `Cel: 0/${targets.length}`;
+}
+
+// -------------------------------------------------------------------------------------
+// 2. ZAKTUALIZOWANA FUNKCJA PRZEJŚCIA DO KOLEJNEGO POZIOMU
 function loadNextLevel() {
     currentTargetIndex++;
     const nextTarget = targets[currentTargetIndex];
+    
+    const titleEl = document.querySelector('.quest-title');
+    const riddleEl = document.querySelector('.quest-riddle');
+    const cardEl = document.querySelector('.quest-card'); // Pobieramy kartę
 
     // Reset przycisku
     const btn = document.getElementById('btn-action');
     btn.classList.remove('done', 'active');
     btn.disabled = true;
     btn.innerText = "Jeszcze za daleko...";
-    btn.style.background = "#ccc";
-    btn.style.color = "#fff";
+    btn.style.background = ""; 
+    btn.style.color = "";
 
-    // Aktualizacja tekstów
-    document.querySelector('.quest-title').innerText = `Cel: ${nextTarget.name}`;
-    document.querySelector('.quest-riddle').innerText = `"${nextTarget.hint}"`;
+    // --- LOGIKA POZIOMÓW ---
+    if (userLevel === 'hard' || userLevel === 'trudny') {
+        titleEl.innerText = `Cel: ${nextTarget.info}`;
+        titleEl.style.fontSize = "1.1rem";
+        titleEl.style.lineHeight = "1.4";
+        if (riddleEl) riddleEl.style.display = 'none';
+        
+        // TRUDNY: Brak zdjęcia w tle
+        if (cardEl) cardEl.style.backgroundImage = 'none';
+
+    } else {
+        titleEl.innerText = `Cel: ${nextTarget.name}`;
+        titleEl.style.fontSize = "";
+        if (riddleEl) {
+            riddleEl.style.display = 'block';
+            riddleEl.innerText = `"${nextTarget.info}"`;
+        }
+
+        // ŁATWY: Zdjęcie w tle
+        if (cardEl && nextTarget.image) {
+            cardEl.style.backgroundImage = `
+                linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), 
+                url('${nextTarget.image}')
+            `;
+            cardEl.style.backgroundSize = 'cover';
+            cardEl.style.backgroundPosition = 'center';
+        }
+    }
+    // ----------------------
+
     document.getElementById('dist-text').innerText = "Szukam sygnału...";
     document.getElementById('dist-text').style.color = "#CC3300";
 
-    // Przesuwamy niewidzialny cel (w pamięci)
     targetMarker.setLatLng([nextTarget.lat, nextTarget.lng]);
-
-    // Centrujemy mapę na graczu
     map.setView([currentLat, currentLng], 15);
 }
 
