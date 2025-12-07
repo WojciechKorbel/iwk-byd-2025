@@ -3,25 +3,6 @@
 let userLevel = null;
 let userAge = null;
 
-// Ta funkcja uruchamia się DOPIERO jak CSV zostaną pobrane
-function initGameAfterLoad() {
-    if (targets.length === 0) return;
-
-    const firstTarget = targets[0];
-
-    // Aktualizujemy UI
-    document.querySelector('.quest-title').innerText = `Cel: ${firstTarget.name}`;
-    if(document.querySelector('.quest-riddle')) {
-        document.querySelector('.quest-riddle').innerText = `"${firstTarget.hint}"`;
-    }
-    
-    // Ustawiamy marker celu
-    targetMarker.setLatLng([firstTarget.lat, firstTarget.lng]);
-    
-    // Aktualizujemy licznik
-    document.getElementById('goal-board').innerText = `Cel: 0/${targets.length}`;
-}
-
 // Funkcja wyboru poziomu
 function selectLevel(level, btnElement) {
     userLevel = level;
@@ -36,41 +17,6 @@ function selectAge(age, btnElement) {
     const buttons = btnElement.parentElement.querySelectorAll('.opt-btn');
     buttons.forEach(b => b.classList.remove('selected'));
     btnElement.classList.add('selected');
-}
-
-// -------------------------------
-// Funkcja START GRY
-function startGame() {
-    // Walidacja
-    if (!userLevel || !userAge) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Wybierz opcje!',
-            text: 'Musisz zaznaczyć poziom trudności i wiek, aby ruszyć w drogę.',
-            confirmButtonColor: '#003366'
-        });
-        return;
-    }
-
-    // czas startu
-    gameStartTime = new Date();
-
-    // Ukryj ekran powitalny
-    const welcomeScreen = document.getElementById('welcome-screen');
-    welcomeScreen.style.transition = "opacity 0.5s";
-    welcomeScreen.style.opacity = "0";
-    
-    setTimeout(() => {
-        welcomeScreen.style.display = "none";
-        
-        // Pokaż interfejs gry
-        document.getElementById('game-ui-top').style.display = "flex";
-        document.getElementById('game-ui-bottom').style.display = "block";
-        
-        if (userLevel === 'hard') {
-            Swal.fire('Tryb Trudny!', 'W tym trybie wskazówki są mniej dokładne. Powodzenia!', 'info');
-        }
-    }, 500);
 }
 
 // -------------------------------------------------------------------------------------
@@ -93,92 +39,17 @@ function parseCoord(coord) {
 // Główna funkcja ładująca i łącząca 4 pliki CSV
 async function loadGameData() {
     try {
-        console.log("Ładowanie danych...");
+        const response = await fetch('/api/game-data');
+        console.log("Response status:", response.status);
+        const data = await response.json();
+        console.log("DATA W JS:", data);
 
-        // Zmieniono: Dodano fetch dla lat_lon.csv
-        const [pomnikiRes, opisyRes, pytaniaRes, latLonRes] = await Promise.all([
-            fetch('../datas/pomniki.csv'),
-            fetch('../datas/opisy.csv'),
-            fetch('../datas/pytania.csv'),
-            fetch('../datas/lat_lon.csv')
-        ]);
+        allMonuments = data;
+        console.log("allMonuments.length =", allMonuments.length);
+        console.log("Pierwszy obiekt:", allMonuments[0]);
 
-        const pomnikiText = await pomnikiRes.text();
-        const opisyText = await opisyRes.text();
-        const pytaniaText = await pytaniaRes.text();
-        const latLonText = await latLonRes.text();
-
-        // Parsowanie CSV
-        const pomnikiData = Papa.parse(pomnikiText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
-        const opisyData = Papa.parse(opisyText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
-        const pytaniaData = Papa.parse(pytaniaText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
-        const latLonData = Papa.parse(latLonText, { header: true, delimiter: ";", skipEmptyLines: true }).data;
-
-        // ŁĄCZENIE DANYCH
-        allMonuments = pomnikiData.map(pomnik => {
-            // Normalizacja nazwy (usuwamy białe znaki z początku/końca, żeby łączenie po nazwie działało pewniej)
-            const cleanName = pomnik.name.trim();
-
-            const opisRow = opisyData.find(o => o.name.trim() === cleanName);
-            const pytanieRow = pytaniaData.find(p => p.name.trim() === cleanName);
-            
-            // Zmieniono: Szukamy współrzędnych w pliku lat_lon.csv
-            const latLonRow = latLonData.find(l => l.name.trim() === cleanName);
-
-            // Logika wyboru współrzędnych:
-            // Najpierw sprawdzamy lat_lon.csv, jeśli tam nie ma, bierzemy z pomniki.csv
-            let rawLat = latLonRow ? latLonRow.lat : pomnik.lat;
-            let rawLon = latLonRow ? latLonRow.lon : pomnik.lon;
-
-            let latitude = parseCoord(rawLat);
-            let longitude = parseCoord(rawLon);
-            
-            if (latitude === 0 || longitude === 0 || isNaN(latitude)) {
-                console.warn(`Brak poprawnych współrzędnych dla: ${cleanName}. Używam domyślnych.`);
-                latitude = 53.123; 
-                longitude = 18.000;
-            }
-
-            return {
-                id: pomnik.id,
-                name: cleanName,
-                lat: latitude,
-                lng: longitude,
-                
-                // Opisy
-                hint: opisRow ? opisRow.description : "Znajdź ten punkt na mapie!",
-                info: opisRow ? opisRow.description : "Brak dodatkowego opisu.",
-                
-                // Zdjęcie
-                image: pomnik.image || "https://via.placeholder.com/800x1200?text=Brak+Zdjecia",
-                
-                // Quiz
-                quiz: {
-                    question: pytanieRow ? pytanieRow.question : "Brak pytania dla tego miejsca.",
-                    answers: {
-                        'a': pytanieRow ? pytanieRow.ansA : "",
-                        'b': pytanieRow ? pytanieRow.ansB : "",
-                        'c': pytanieRow ? pytanieRow.ansC : ""
-                    },
-                    correct: pytanieRow ? pytanieRow.correct.toLowerCase().trim() : 'a'
-                },
-                
-                recommendations: [
-                    { icon: '⭐', name: 'Atrakcja w pobliżu', desc: 'Warto zobaczyć!' }
-                ]
-            };
-        });
-
-        // Mieszamy kolejność
-        targets.sort(() => Math.random() - 0.5);
-
-        console.log(`Załadowano ${targets.length} punktów.`, targets);
-
-        startLevel('easy');
-
-    } catch (error) {
-        console.error("Błąd krytyczny:", error);
-        alert("Błąd ładowania danych! Zobacz konsolę (F12).");
+    } catch (err) {
+        console.error("FETCH ERROR:", err);
     }
 }
 
@@ -368,10 +239,8 @@ function getSmoothPath(points) {
 // ---------------------------------------------------------------------------------------------------------------------
 // Funkcja START GRY
 function startGame() {
-    // Pobierz wpisane imię
     const nameInput = document.getElementById('username-input').value.trim();
 
-    // Walidacja
     if (!userLevel || !userAge || nameInput === "") {
         Swal.fire({
             icon: 'warning',
@@ -383,18 +252,22 @@ function startGame() {
     }
 
     userName = nameInput;
-
     gameStartTime = new Date();
 
     const welcomeScreen = document.getElementById('welcome-screen');
-    welcomeScreen.style.transition = "opacity 0.5s";
     welcomeScreen.style.opacity = "0";
-    
+
     setTimeout(() => {
         welcomeScreen.style.display = "none";
-        document.getElementById('game-ui-top').style.display = "flex";
-        document.getElementById('game-ui-bottom').style.display = "block";
-        map.getContainer().focus(); 
+
+        // document.getElementById('game-ui-top').style.display = "flex";
+        // document.getElementById('game-ui-bottom').style.display = "block";
+
+        // 🔥 KLUCZOWE LINIE (WCZEŚNIEJ ICH NIE BYŁO)
+        startLevel(userLevel);       // ← losuje targets
+        initGameAfterLoad();         // ← ustawia cel, UI, marker
+
+        map.getContainer().focus();
     }, 500);
 }
 
@@ -425,14 +298,19 @@ function updatePosition(lat, lng) {
 
     // Kamera podąża za graczem
     map.panTo([currentLat, currentLng]); 
-    
-    // OBLICZANIE DYSTANSU I UI
+
+    // --- BEZPIECZEŃSTWO: sprawdzamy czy istnieje cel ---
     const activeTarget = targets[currentTargetIndex];
-    const dist = Math.floor(L.latLng(currentLat, currentLng).distanceTo(L.latLng(activeTarget.lat, activeTarget.lng)));
-    
+    if (!activeTarget) return;  // jeśli brak celu, kończymy funkcję
+
+    // OBLICZANIE DYSTANSU I UI
+    const dist = Math.floor(L.latLng(currentLat, currentLng)
+        .distanceTo(L.latLng(parseCoord(activeTarget.lat), parseCoord(activeTarget.lng))));
+
     const txt = document.getElementById('dist-text');
     const btn = document.getElementById('btn-action');
 
+    if (!txt || !btn) return;  // jeśli elementy nie istnieją, nic nie robimy
     if (btn.classList.contains('done')) return;
 
     if (dist < 30) {
@@ -496,6 +374,21 @@ function closeMonumentScreen() {
 }
 
 // -------------------------------------------------------------------------
+async function loadNearbyActivities(ageGroup) {
+    try {
+        const response = await fetch(`/api/activities/${ageGroup}`);
+        const data = await response.json();
+        return data.map(act => ({
+            name: act.name,
+            desc: act.description,
+            icon: "📍"  // możesz zmienić ikonę np. według typu
+        }));
+    } catch (err) {
+        console.error("Błąd ładowania aktywności:", err);
+        return [];
+    }
+}
+
 // FUNKCJA POKAZUJĄCA REKOMENDACJE
 function showRecommendations(activeTarget) {
     console.log("Otwieram rekomendacje dla:", activeTarget.name);
@@ -633,16 +526,24 @@ function startQuiz() {
             
             if (scoreResult.isDenied) {
                 // SCENARIUSZ A: Gracz kliknął "Co warto zobaczyć"
-                // Najpierw pokazujemy rekomendacje...
-                showRecommendations(activeTarget).then(() => {
-                    // ...a dopiero jak je zamknie (.then), sprawdzamy odznakę
+                // Pobieramy rekomendacje dopasowane do wieku
+                loadNearbyActivities(userAge).then(activities => {
+                    activeTarget.recommendations = activities;  // wstawiamy do activeTarget
+                    // Dopiero teraz pokazujemy rekomendacje
+                    showRecommendations(activeTarget).then(() => {
+                        // Po zamknięciu rekomendacji sprawdzamy odznakę i idziemy dalej
+                        proceedToBadgeAndNextLevel();
+                    });
+                }).catch(err => {
+                    console.error("Błąd ładowania rekomendacji:", err);
+                    // Jeśli coś pójdzie nie tak, i tak idziemy dalej
                     proceedToBadgeAndNextLevel();
                 });
             } else {
                 // SCENARIUSZ B: Gracz kliknął "Lecimy dalej"
-                // Od razu sprawdzamy odznakę
                 proceedToBadgeAndNextLevel();
             }
+
         });
     });
 }
@@ -767,7 +668,7 @@ function loadNextLevel() {
 }
 
 // Inicjalizacja
-updatePosition(currentLat, currentLng);
+// updatePosition(currentLat, currentLng);
 
 // ---------------------------------------------------------------------------------------------------------------------
 // EKRAN Z WYNIKAMI KONCOWYMI

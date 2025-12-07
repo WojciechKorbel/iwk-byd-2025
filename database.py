@@ -1,249 +1,233 @@
 import sqlite3
 import csv
+import os
 
+DB_NAME = 'database.db'
+
+# --- FUNKCJE POMOCNICZE ---
+def clean_coord(coord):
+    """Zamienia polski przecinek na kropkę i konwertuje na float."""
+    if not coord: return 0.0
+    try:
+        return float(coord.replace(',', '.').strip())
+    except ValueError:
+        return 0.0
+
+def clean_text(text):
+    """Usuwa białe znaki."""
+    return text.strip() if text else ""
+
+# --- TWORZENIE TABEL ---
 def make_database():
-    conn = sqlite3.connect('database.db')
+    if os.path.exists(DB_NAME):
+        os.remove(DB_NAME)
+        print("Usunięto starą wersję bazy.")
 
+    conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    execution = '''PRAGMA foreign_keys = ON;
+    execution = '''
+    PRAGMA foreign_keys = ON;
 
--- 1. UŻYTKOWNICY
-CREATE TABLE User (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    email TEXT UNIQUE,
-    password_hash TEXT,
-    total_score INTEGER DEFAULT 0, -- Suma punktów do rankingu
-    badges_count INTEGER DEFAULT 0, -- Licznik zdobytych odznak
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    CREATE TABLE Statue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE, 
+        location_name TEXT,
+        image_path TEXT,
+        location_lat REAL,
+        location_lon REAL,
+        description TEXT DEFAULT 'Szukaj w pobliżu...'
+    );
 
--- 2. POMNIKI (Punkt zwiedzania)
--- Dodano: Pytania quizowe i współrzędne GPS
-CREATE TABLE Statue (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    image_path TEXT,
-    location_lat REAL,   -- Szerokość geograficzna (do obliczania odległości)
-    location_lon REAL,   -- Długość geograficzna
-    location_name TEXT
-);
+    CREATE TABLE Quiz (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        quiz_question TEXT,
+        option_a TEXT,
+        option_b TEXT,
+        option_c TEXT,
+        correct_answer TEXT,
+        FOREIGN KEY(name) REFERENCES Statue(name)
+    );
 
-
-CREATE TABLE Quiz (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    quiz_question TEXT,  -- Np. "Jaki kolor ma czapka?"
-    option_a TEXT,       -- Odpowiedź A
-    option_b TEXT,       -- Odpowiedź B
-    option_c TEXT,       -- Odpowiedź C
-    correct_answer TEXT -- Np. 'A'
-);
-
--- 3. GASTRONOMIA (Nagroda po 2 punktach)
-CREATE TABLE Gastronomy_Point (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    type TEXT,           -- 'Kawiarnia', 'Restauracja', 'Lodziarnia'
-    location_lat REAL,
-    location_lon REAL,
-    discount_description TEXT, -- Np. "-20% na hasło BYDGOSZCZ"
-    image_path TEXT
-);
-
--- 4. AKTYWNOŚCI (Nagroda końcowa etapu)
-CREATE TABLE Activity_Point (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    location_lat REAL,
-    location_lon REAL,
-    
-    -- Grupa docelowa (do filtrowania po wyborze wieku)
-    -- Wartości np.: 'kids' (dzieci), 'students' (studenci), 'adults', 'all'
-    target_age_group TEXT 
-);
-
--- 5. SESJA GRY (Trwa od startu do "Zakończ Grę")
-CREATE TABLE Game_Session (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    end_time TIMESTAMP,
-    
-    selected_age_group TEXT, -- Wybór gracza na początku
-    selected_mode TEXT,      -- Wybór gracza na początku
-    
-    session_score INTEGER DEFAULT 0, -- Punkty tylko z tej gry
-    is_completed BOOLEAN DEFAULT 0,
-    
-    FOREIGN KEY (user_id) REFERENCES User(id)
-);
-
--- 6. ZDJĘCIA Z SESJI (Do Photo Dump)
-CREATE TABLE Session_Photos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id INTEGER,
-    statue_id INTEGER,
-    photo_path TEXT, -- Ścieżka do pliku na serwerze
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (session_id) REFERENCES Game_Session(id),
-    FOREIGN KEY (statue_id) REFERENCES Statue(id)
-);
-
--- 7. HISTORIA ODWIEDZIN (Żeby nie losować 2x tego samego w jednej grze)
-CREATE TABLE Visited_Statues (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id INTEGER,
-    statue_id INTEGER,
-    
-    FOREIGN KEY (session_id) REFERENCES Game_Session(id),
-    FOREIGN KEY (statue_id) REFERENCES Statue(id)
-);
-
--- 8. ODZNAKI (System nagród)
-CREATE TABLE User_Badges (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    badge_name TEXT, -- Np. "Odkrywca", "Fotograf"
-    description TEXT,
-    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    image TEXT,
-    FOREIGN KEY (user_id) REFERENCES User(id)
-);'''
+    CREATE TABLE Activity (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        lat REAL,
+        lon REAL,
+        target_age_group TEXT
+    );
+    '''
     try:
         c.executescript(execution)
-        print("Baza danych została pomyślnie utworzona.")
+        print("Tabele utworzone pomyślnie.")
     except sqlite3.Error as e:
-        print(f"Wystąpił błąd podczas tworzenia bazy: {e}")
+        print(f"Błąd SQL: {e}")
     finally:
         conn.commit()
         conn.close()
 
-
-
-def get_db_connection():
-    conn = sqlite3.connect('database.db')
-
-    conn.execute("PRAGMA foreign_keys = ON")
-
-    conn.row_factory = sqlite3.Row
-    return conn
-
+# --- ŁADOWANIE DANYCH ---
 
 def load_statues(filename):
-    conn = sqlite3.connect('database.db')
-
+    conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
+    print(f"--> Przetwarzanie {filename}...")
 
+    try:
+        with open(filename, encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            next(reader, None) # Pomiń nagłówek
 
-    with open(filename) as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            execc = "INSERT INTO STATUE(name, location ,image_path, location_lat, location_lon) VALUES (?,?,?,?,?)"
-            cur.execute(execc, (row[1], row[2] ,row[4], row[5], row[6]))
+            for row in reader:
+                if len(row) < 7: continue 
+                
+                # CSV: id;name;location;link;image;lat;lon
+                name = clean_text(row[1])
+                loc_name = clean_text(row[2])
+                image = clean_text(row[4])
+                lat = clean_coord(row[5])
+                lon = clean_coord(row[6])
 
+                cur.execute("""
+                    INSERT OR IGNORE INTO Statue (name, location_name, image_path, location_lat, location_lon)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (name, loc_name, image, lat, lon))
+                
+    except Exception as e:
+        print(f"Błąd w load_statues: {e}")
+    
+    conn.commit()
+    conn.close()
+
+def load_lat_lon_fix(filename):
+    """Nadpisuje współrzędne z pliku lat_lon.csv (są dokładniejsze)"""
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    print(f"--> Aktualizacja współrzędnych z {filename}...")
+
+    try:
+        with open(filename, encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            next(reader, None)
+
+            for row in reader:
+                if len(row) < 3: continue
+                # CSV: name;lat;lon
+                name = clean_text(row[0])
+                lat = clean_coord(row[1])
+                lon = clean_coord(row[2])
+
+                cur.execute("""
+                    UPDATE Statue 
+                    SET location_lat = ?, location_lon = ? 
+                    WHERE name = ?
+                """, (lat, lon, name))
+                
+    except Exception as e:
+        print(f"Błąd w load_lat_lon_fix: {e}")
 
     conn.commit()
     conn.close()
 
+def load_descriptions(filename):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    print(f"--> Dodawanie opisów z {filename}...")
 
+    try:
+        with open(filename, encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            next(reader, None)
+
+            for row in reader:
+                if len(row) < 2: continue
+                # CSV: name;description
+                name = clean_text(row[0])
+                desc = clean_text(row[1])
+
+                cur.execute("UPDATE Statue SET description = ? WHERE name = ?", (desc, name))
+                
+    except Exception as e:
+        print(f"Błąd w load_descriptions: {e}")
+
+    conn.commit()
+    conn.close()
 
 def load_quiz(filename):
-    conn = sqlite3.connect('database.db')
-
+    conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
+    print(f"--> Dodawanie pytań z {filename}...")
 
+    try:
+        with open(filename, encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            next(reader, None)
 
-    with open(filename) as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            execc = "INSERT INTO QUIZ(name, quiz_question, option_a, option_b, option_c, correct_answer) VALUES (?,?,?,?,?,?)"
-            cur.execute(execc, (row[0], row[1], row[2], row[3], row[4], row[5]))
+            for row in reader:
+                if len(row) < 6: continue
+                # CSV: name;question;ansA;ansB;ansC;correct
+                name = clean_text(row[0])
+                quest = clean_text(row[1])
+                a = clean_text(row[2])
+                b = clean_text(row[3])
+                c = clean_text(row[4])
+                correct = clean_text(row[5]).lower() 
 
+                cur.execute("""
+                    INSERT INTO Quiz (name, quiz_question, option_a, option_b, option_c, correct_answer)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (name, quest, a, b, c, correct))
+                
+    except Exception as e:
+        print(f"Błąd w load_quiz: {e}")
 
     conn.commit()
     conn.close()
 
-
-def load_desctiptions(filename):
-    conn = sqlite3.connect('database.db')
-
+# ladowanie aktywnosci
+def load_activities(filename):
+    conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
+    print(f"--> Dodawanie aktywności z {filename}...")
 
-    with open(filename) as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            execc = "UPDATE Statue SET description = ? WHERE name = ?"
-            cur.execute(execc, (row[1], row[0]))
+    try:
+        with open(filename, encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            next(reader, None)  # pomiń nagłówek
+
+            for row in reader:
+                if len(row) < 5: 
+                    continue
+                
+                name = clean_text(row[0])
+                desc = clean_text(row[1])
+                lat = clean_coord(row[2])
+                lon = clean_coord(row[3])
+                age_group = clean_text(row[4])
+
+                cur.execute("""
+                    INSERT INTO Activity (name, description, lat, lon, target_age_group)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (name, desc, lat, lon, age_group))
+                
+    except Exception as e:
+        print(f"Błąd w load_activities: {e}")
 
     conn.commit()
     conn.close()
 
-def load_badges(filename):
-    conn = sqlite3.connect('database.db')
-
-    cur = conn.cursor()
-
-    with open(filename) as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            execc = "INSERT INTO Badge(name, description) VALUES (?,?)"
-            cur.execute(execc, (row[1], row[2]))
-
-
-    conn.commit()
-    conn.close()
-
-
-
-def load_gastronomy(filename):
-    conn = sqlite3.connect('database.db')
-    cur = conn.cursor()
-
-    with open(filename) as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            execc = ("INSERT INTO Gastronomy_point(name, description, type, location_lat, location_lon, discount_description)"
-                     " VALUES (?,?,?,?,?,?)")
-            cur.execute(execc, (row[0], row[1] , row[2], row[3], row[4], row[5]))
-
-    conn.commit()
-    conn.close()
-
-
-def load_activiies(filename):
-    conn = sqlite3.connect('database.db')
-
-    cur = conn.cursor()
-
-    with open(filename) as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            execc = ("INSERT INTO Activity_Point(name, description, location_lat, location_lot, target_age_group) "
-                     "VALUES (?,?,?,?,?)")
-            cur.execute(execc, (row[0], row[1], row[2], row[3], row[4]))
-
-
-    conn.commit()
-    conn.close()
-
-
-
-
-
-
-
-
-
+# --- START ---
 if __name__ == '__main__':
-    pass
-
-
-
-
-
-
+    make_database()
+    
+    # Kolejność ładowania
+    load_statues('datas/pomniki.csv')
+    load_lat_lon_fix('datas/lat_lon.csv')
+    load_descriptions('datas/opisy.csv')
+    load_quiz('datas/pytania.csv')
+    load_activities('datas/activities.csv')
+    
+    print("\n--- GOTOWE! Baza danych utworzona. ---")
+    print("Teraz uruchom: python app.py")
