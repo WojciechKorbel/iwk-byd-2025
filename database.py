@@ -4,7 +4,6 @@ import os
 
 DB_NAME = 'database.db'
 
-# --- FUNKCJE POMOCNICZE ---
 def clean_coord(coord):
     """Zamienia polski przecinek na kropkę i konwertuje na float."""
     if not coord: return 0.0
@@ -17,7 +16,6 @@ def clean_text(text):
     """Usuwa białe znaki."""
     return text.strip() if text else ""
 
-# --- TWORZENIE TABEL ---
 def make_database():
     if os.path.exists(DB_NAME):
         os.remove(DB_NAME)
@@ -58,6 +56,22 @@ def make_database():
         lon REAL,
         target_age_group TEXT
     );
+    CREATE TABLE Gastronomy (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        type TEXT,
+        lat REAL,
+        lon REAL,
+        discount_description TEXT
+    );
+    
+    CREATE TABLE Leaderboard (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        total_score INTEGER DEFAULT 0,
+        total_visited INTEGER DEFAULT 0
+    );
     '''
     try:
         c.executescript(execution)
@@ -68,8 +82,6 @@ def make_database():
         conn.commit()
         conn.close()
 
-# --- ŁADOWANIE DANYCH ---
-
 def load_statues(filename):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -78,11 +90,11 @@ def load_statues(filename):
     try:
         with open(filename, encoding='utf-8') as csvfile:
             reader = csv.reader(csvfile, delimiter=';')
-            next(reader, None) # Pomiń nagłówek
+            next(reader, None)
 
             for row in reader:
-                if len(row) < 7: continue 
-                
+                if len(row) < 7: continue
+
                 # CSV: id;name;location;link;image;lat;lon
                 name = clean_text(row[1])
                 loc_name = clean_text(row[2])
@@ -94,10 +106,10 @@ def load_statues(filename):
                     INSERT OR IGNORE INTO Statue (name, location_name, image_path, location_lat, location_lon)
                     VALUES (?, ?, ?, ?, ?)
                 """, (name, loc_name, image, lat, lon))
-                
+
     except Exception as e:
         print(f"Błąd w load_statues: {e}")
-    
+
     conn.commit()
     conn.close()
 
@@ -124,7 +136,7 @@ def load_lat_lon_fix(filename):
                     SET location_lat = ?, location_lon = ? 
                     WHERE name = ?
                 """, (lat, lon, name))
-                
+
     except Exception as e:
         print(f"Błąd w load_lat_lon_fix: {e}")
 
@@ -148,7 +160,7 @@ def load_descriptions(filename):
                 desc = clean_text(row[1])
 
                 cur.execute("UPDATE Statue SET description = ? WHERE name = ?", (desc, name))
-                
+
     except Exception as e:
         print(f"Błąd w load_descriptions: {e}")
 
@@ -173,20 +185,19 @@ def load_quiz(filename):
                 a = clean_text(row[2])
                 b = clean_text(row[3])
                 c = clean_text(row[4])
-                correct = clean_text(row[5]).lower() 
+                correct = clean_text(row[5]).lower()
 
                 cur.execute("""
                     INSERT INTO Quiz (name, quiz_question, option_a, option_b, option_c, correct_answer)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """, (name, quest, a, b, c, correct))
-                
+
     except Exception as e:
         print(f"Błąd w load_quiz: {e}")
 
     conn.commit()
     conn.close()
 
-# ladowanie aktywnosci
 def load_activities(filename):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -198,9 +209,9 @@ def load_activities(filename):
             next(reader, None)  # pomiń nagłówek
 
             for row in reader:
-                if len(row) < 5: 
+                if len(row) < 5:
                     continue
-                
+
                 name = clean_text(row[0])
                 desc = clean_text(row[1])
                 lat = clean_coord(row[2])
@@ -211,23 +222,56 @@ def load_activities(filename):
                     INSERT INTO Activity (name, description, lat, lon, target_age_group)
                     VALUES (?, ?, ?, ?, ?)
                 """, (name, desc, lat, lon, age_group))
-                
+
     except Exception as e:
         print(f"Błąd w load_activities: {e}")
 
     conn.commit()
     conn.close()
 
-# --- START ---
+
+def load_gastronomy(filename):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    print(f"--> Dodawanie gastronomii z {filename}...")
+
+    try:
+        with open(filename, encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            next(reader, None)  # pomiń nagłówek
+
+            for row in reader:
+                if len(row) < 6:
+                    continue
+
+                # CSV: name;description;type;lat;lon;discount_description
+                name = clean_text(row[0])
+                desc = clean_text(row[1])
+                g_type = clean_text(row[2])
+                lat = clean_coord(row[3])
+                lon = clean_coord(row[4])
+                discount = clean_text(row[5])
+
+                cur.execute("""
+                    INSERT INTO Gastronomy (name, description, type, lat, lon, discount_description)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (name, desc, g_type, lat, lon, discount))
+
+    except Exception as e:
+        print(f"Błąd w load_gastronomy: {e}")
+
+    conn.commit()
+    conn.close()
+
 if __name__ == '__main__':
     make_database()
-    
-    # Kolejność ładowania
+
     load_statues('datas/pomniki.csv')
     load_lat_lon_fix('datas/lat_lon.csv')
     load_descriptions('datas/opisy.csv')
     load_quiz('datas/pytania.csv')
     load_activities('datas/activities.csv')
-    
+    load_gastronomy('datas/gastronomy.csv')
+
     print("\n--- GOTOWE! Baza danych utworzona. ---")
     print("Teraz uruchom: python app.py")
