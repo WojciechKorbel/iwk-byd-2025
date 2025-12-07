@@ -109,7 +109,9 @@ CREATE TABLE User_Badges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
     badge_name TEXT, -- Np. "Odkrywca", "Fotograf"
+    description TEXT,
     earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    image TEXT,
     FOREIGN KEY (user_id) REFERENCES User(id)
 );'''
     try:
@@ -132,7 +134,7 @@ def get_db_connection():
     return conn
 
 
-def load_statues_csv_to_base(filename):
+def load_statues(filename):
     conn = sqlite3.connect('database.db')
 
     cur = conn.cursor()
@@ -141,8 +143,8 @@ def load_statues_csv_to_base(filename):
     with open(filename) as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
-            execc = "INSERT INTO STATUE(name, location ,image_path) VALUES (?,?,?)"
-            cur.execute(execc, (row[1], row[2] ,row[4]))
+            execc = "INSERT INTO STATUE(name, location ,image_path, location_lat, location_lon) VALUES (?,?,?,?,?)"
+            cur.execute(execc, (row[1], row[2] ,row[4], row[5], row[6]))
 
 
     conn.commit()
@@ -150,7 +152,7 @@ def load_statues_csv_to_base(filename):
 
 
 
-def load_quiz_csv_to_base(filename):
+def load_quiz(filename):
     conn = sqlite3.connect('database.db')
 
     cur = conn.cursor()
@@ -180,6 +182,57 @@ def load_desctiptions(filename):
 
     conn.commit()
     conn.close()
+
+def load_badges(filename):
+    conn = sqlite3.connect('database.db')
+
+    cur = conn.cursor()
+
+    with open(filename) as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            execc = "INSERT INTO Badge(name, description) VALUES (?,?)"
+            cur.execute(execc, (row[1], row[2]))
+
+
+    conn.commit()
+    conn.close()
+
+
+
+def load_gastronomy(filename):
+    conn = sqlite3.connect('database.db')
+    cur = conn.cursor()
+
+    with open(filename) as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            execc = ("INSERT INTO Gastronomy_point(name, description, type, location_lat, location_lon, discount_description)"
+                     " VALUES (?,?,?,?,?,?)")
+            cur.execute(execc, (row[0], row[1] , row[2], row[3], row[4], row[5]))
+
+    conn.commit()
+    conn.close()
+
+
+def load_activiies(filename):
+    conn = sqlite3.connect('database.db')
+
+    cur = conn.cursor()
+
+    with open(filename) as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            execc = ("INSERT INTO Activity_Point(name, description, location_lat, location_lot, target_age_group) "
+                     "VALUES (?,?,?,?,?)")
+            cur.execute(execc, (row[0], row[1], row[2], row[3], row[4]))
+
+
+    conn.commit()
+    conn.close()
+
+
+
 
 
 
