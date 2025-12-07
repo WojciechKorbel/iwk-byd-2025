@@ -9,20 +9,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
 
-    <!-- ZALADOWANIE CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- EKRAN POWITALNY -->
-     <div id="welcome-screen">
+    <div id="welcome-screen">
         <div class="welcome-content">
             <h1>BYDGOSKIE PODCHODY</h1>
             <p>Odkryj tajemnice miasta!</p>
 
             <div class="selection-group">
-                <input type="text" id="username-input" placeholder="Wpisz swój nick..." maxlength="15">
+                <input type="text" id="username-input" class="styled-input" placeholder="Wpisz swój nick..." maxlength="15">
             </div>
 
             <div class="selection-group">
@@ -42,11 +40,20 @@
                 </div>
             </div>
 
+            <div class="selection-group">
+                <h3>Ile miejsc chcesz odwiedzić?</h3>
+                <div style="position: relative; max-width: 200px; margin: 0 auto;">
+                    <input type="number" id="quest-limit-input" class="styled-input" placeholder="Wczytuję dane..." min="1">
+                    <div id="limit-hint" style="font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 5px;">
+                        Czekam na połączenie z bazą...
+                    </div>
+                </div>
+            </div>
+
             <button id="start-btn" onclick="startGame()">ROZPOCZNIJ PRZYGODĘ ▶</button>
         </div>
     </div>
 
-    <!-- PRZENIESIENIE SIE DO MIEJSCA - POMNIK -->
     <div id="monument-screen" style="display: none;">
         <div id="monument-bg"></div>
         <div class="monument-overlay"></div>
@@ -57,13 +64,12 @@
                 <p id="mon-info">Opis historyczny...</p>
             </div>
             <button id="quiz-btn" onclick="startQuiz()">ROZWIĄŻ ZAGADKĘ</button>
-            
+
             <button class="close-btn" onclick="closeMonumentScreen()">✕</button>
         </div>
     </div>
 
-    <!-- EKRAN Z WYNIKAMI -->
-     <div id="results-screen" style="display: none;">
+    <div id="results-screen" style="display: none;">
         <div class="results-content">
             <div class="trophy-anim">🏆</div>
             <h1>GRATULACJE!</h1>
@@ -82,11 +88,13 @@
 
             <p class="reward-text">Pokaż ten ekran w punkcie IT,<br>aby odebrać nagrodę!</p>
 
-            <button id="restart-btn" onclick="location.reload()">ZAGRAJ JESZCZE RAZ ↺</button>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button id="leaderboard-btn" onclick="showLeaderboard()" style="background: #007bff; color: white; border: none; border-radius: 50px; padding: 15px 25px; font-weight: bold; cursor: pointer; flex: 1;">🏆 RANKING</button>
+                <button id="restart-btn" onclick="location.reload()" style="background: linear-gradient(45deg, #FFC107, #FF8C00); color: #003366; border: none; border-radius: 50px; padding: 15px 25px; font-weight: bold; cursor: pointer; flex: 1;">ZAGRAJ PONOWNIE ↺</button>
+            </div>
         </div>
     </div>
 
-    <!-- GRA -->
     <div class="status-bar">
         <span id="score-board">🏆 Pkt: 0</span>
         <div id="badges-container" title="Twoje zdobycze"></div>
@@ -111,8 +119,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
-    <!-- ZALADOWANIE JAVASCRIPT -->
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="../script.js"></script>
