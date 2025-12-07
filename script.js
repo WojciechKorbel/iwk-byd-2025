@@ -97,10 +97,10 @@ async function loadGameData() {
 
         // Zmieniono: Dodano fetch dla lat_lon.csv
         const [pomnikiRes, opisyRes, pytaniaRes, latLonRes] = await Promise.all([
-            fetch('./datas/pomniki.csv'),
-            fetch('./datas/opisy.csv'),
-            fetch('./datas/pytania.csv'),
-            fetch('./datas/lat_lon.csv')
+            fetch('../datas/pomniki.csv'),
+            fetch('../datas/opisy.csv'),
+            fetch('../datas/pytania.csv'),
+            fetch('../datas/lat_lon.csv')
         ]);
 
         const pomnikiText = await pomnikiRes.text();
